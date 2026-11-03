@@ -5,136 +5,250 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="color-scheme" content="light dark">
-<title>QTW 策略 Dashboard</title>
+<title>QTW 策略績效</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
-  /* 版面：手機單欄，桌機最寬 1120px；數字用 Barlow，文字用 Noto Sans TC */
+  /*
+    版面：上方一條產品列，下面是一欄最寬 1200px 的畫布，左右各 24px（手機 16px）。
+    卡片間距一律 16px。總績效卡是 2fr + 1fr：左邊圖、右邊開關清單；手機改成上下。
+    顏色只放在資料上：總績效線用唯一的藍，各策略依分類用三組色系＋虛線樣式區分，紅賺綠賠只用在數字。
+    Apple 設計原則：系統字型（SF Pro / 蘋方）、Apple 系統色（文字用無障礙版本）、分組卡片、可點的東西至少 44px 高。
+  */
   :root {
-    --bg: #eef3f8; --panel: #ffffff; --line: #dde6f1; --fg: #0f1b2d; --muted: #5f6b7a;
-    --accent: #1d5b9e; --up: #c62828; --down: #147a3a; --hover: #f2f6fb; --sel: #e4eef9;
-    --font-text: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-    --font-num: "Barlow", "Noto Sans TC", system-ui, sans-serif;
+    --ground: #f2f2f7; --surface: #ffffff; --raised: #f7f7fa; --active: #e5e5ea;
+    --border: #e5e5ea; --rule: #ededf0; --control: #d1d1d6;
+    --text: #000000; --muted: #6e6e73; --faint: #6e6e73;
+    --accent: #007aff; --link: #0066cc; --up: #d70015; --down: #248a3d; --grid: #e5e5ea;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --num: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
+    --gap: 16px; --pad: 20px; --radius: 12px; --radius-control: 8px; --hit: 36px;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0d1520; --panel: #152131; --line: #24344a; --fg: #e8eef6; --muted: #93a3b8;
-      --accent: #7cb7f0; --up: #ff6b6b; --down: #4cc38a; --hover: #1b2a3e; --sel: #1f3350; color-scheme: dark; }
+    :root {
+      --ground: #000000; --surface: #1c1c1e; --raised: #232325; --active: #2c2c2e;
+      --border: #2c2c2e; --rule: #262628; --control: #48484a;
+      --text: #ffffff; --muted: #a1a1a6; --faint: #98989d;
+      --accent: #0a84ff; --link: #409cff; --up: #ff6961; --down: #30d158; --grid: #2c2c2e;
+      color-scheme: dark;
+    }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-text); font-size: 15px; line-height: 1.5;
-    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
-  .page { max-width: 1120px; margin-inline: auto; display: flex; flex-direction: column; gap: 18px;
-    padding-block: 20px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .head { display: flex; flex-direction: column; gap: 6px; }
-  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
-  h1 { margin: 0; font-size: 26px; font-weight: 700; text-wrap: balance; }
-  .take { margin: 0; font-size: 15px; }
-  .take b { font-family: var(--font-num); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .note { margin: 0; font-size: 12px; color: var(--muted); }
-  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 12px; color: var(--muted); }
-  .btn { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
-  .btn:focus-visible, tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .alert { margin: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--up); color: var(--up); background: var(--panel); font-size: 14px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; }
-  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-  .label { font-size: 12px; color: var(--muted); }
-  .val { font-family: var(--font-num); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
-  .pill { align-self: flex-start; font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-  .pill.ok { color: var(--down); border-color: currentColor; }
-  .pill.bad { color: var(--up); border-color: currentColor; font-weight: 700; }
-  .up { color: var(--up); } .down { color: var(--down); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-  .card-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
-  h2 { margin: 0; font-size: 17px; font-weight: 700; }
-  .sub { margin: 0; font-size: 12px; color: var(--muted); }
-  .empty { margin: 0; font-size: 13px; color: var(--muted); }
-  .scroll { overflow: auto; max-height: 30rem; }
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.47; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .n { font-family: var(--num); font-variant-numeric: tabular-nums; }
+  .up { color: var(--up); } .down { color: var(--down); } .mute { color: var(--muted); }
+
+  /* 產品列 */
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--ground); border-bottom: 1px solid var(--border); padding-top: env(safe-area-inset-top, 0px); }
+  .bar-in { max-width: 1248px; margin-inline: auto; height: 56px; display: flex; align-items: center; gap: 12px; padding-inline: max(24px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-right, 0px)); }
+  .mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mark svg { flex: none; }
+  .mark b { font-size: 17px; font-weight: 600; white-space: nowrap; }
+  .mark span { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fresh .stale { color: var(--up); font-weight: 500; }
+  .fresh { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .btn { height: var(--hit); padding: 0 14px; border-radius: 999px; border: 0; background: var(--active); color: var(--link); cursor: pointer; font-size: 15px; font-weight: 500; }
+  .btn:hover { background: var(--control); }
+  .btn:active { transform: translateY(1px); }
+
+  /* 畫布 */
+  .page { max-width: 1248px; margin-inline: auto; padding: 24px max(24px, env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
+  .title { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  h1 { margin: 0; font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+  .finding { margin: 0; font-size: 15px; color: var(--text); }
+  .finding .n { font-weight: 600; }
+  .alert { margin: 0; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+  .alert b { color: var(--up); font-weight: 600; }
+  .link { border: 0; background: none; padding: 0 4px; min-height: var(--hit); color: var(--link); cursor: pointer; font-size: 15px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+  .card-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 16px var(--pad) 0; }
+  h2 { margin: 0; font-size: 17px; font-weight: 600; }
+  .meta { font-size: 13px; color: var(--muted); }
+
+  /* 總績效 */
+  .perf { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .perf-main { padding: 16px var(--pad) 12px; min-width: 0; }
+  .perf-side { border-left: 1px solid var(--border); padding: 16px var(--pad); min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+  .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+  .lead-s { font-size: 13px; color: var(--muted); }
+  .lead-s .n { color: var(--text); font-weight: 500; }
+  .chart { position: relative; margin-top: 12px; height: 300px; }
+  .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .chart-empty { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-size: 13px; color: var(--muted); }
+  .tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); padding: 8px 10px; font-size: 12px; min-width: 150px; }
+  .tip .d { color: var(--muted); margin-bottom: 4px; }
+  .tip .r { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; line-height: 1.7; }
+  .tip .r .n { text-align: right; }
+  .tip .tot { font-weight: 600; }
+
+  .grp { display: flex; flex-direction: column; gap: 2px; }
+  .grp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0 8px; min-height: var(--hit); cursor: pointer; text-align: left; font-size: 13px; color: var(--muted); }
+  .grp-h:hover { color: var(--text); }
+  .grp-h .n { font-size: 13px; }
+  .tg { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: var(--hit); padding: 0 8px; border: 0; border-radius: var(--radius-control); background: none; cursor: pointer; text-align: left; font-size: 15px; }
+  .tg:hover { background: var(--raised); }
+  .tg[aria-pressed="false"] { color: var(--faint); }
+  .tg[aria-pressed="false"] svg { opacity: .3; }
+  .tg[aria-pressed="false"] .n { color: var(--faint); }
+  .tg-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tg.total { cursor: default; font-weight: 600; }
+  .tg.total:hover { background: none; }
+  .idle { font-size: 13px; color: var(--muted); margin: 0; padding: 0 8px; }
+
+  /* 指標列：一個容器用細線分格 */
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .kpi { padding: 14px var(--pad); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .kpi + .kpi { border-left: 1px solid var(--border); }
+  .kpi-l { font-size: 13px; color: var(--muted); }
+  .kpi-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 600; line-height: 1.25; white-space: nowrap; }
+  .kpi-v small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  .kpi-s { font-size: 13px; color: var(--muted); }
+  .pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 500; background: var(--active); color: var(--text); width: max-content; margin-top: 3px; }
+  .pill.ok { background: #dcfae5; color: #04250e; }
+  .pill.bad { background: #ffedea; color: #831c1e; }
+  @media (prefers-color-scheme: dark) { .pill.ok { background: #172a1d; color: #3fc07a; } .pill.bad { background: #2c1a20; color: #ff7a8a; } }
+
+  /* 表格 */
+  .tbl-wrap { overflow-x: auto; padding: 4px var(--pad) 12px; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th { position: sticky; top: 0; z-index: 1; background: var(--panel); text-align: right; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  td { text-align: right; padding: 9px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; font-family: var(--font-num); font-weight: 500; }
-  td.t { font-family: var(--font-text); font-weight: 400; }
+  th { text-align: right; font-weight: 400; font-size: 13px; color: var(--muted); padding: 10px 8px 8px; white-space: nowrap; border-bottom: 1px solid var(--border); }
+  td { text-align: right; padding: 0 8px; height: 48px; border-bottom: 1px solid var(--rule); white-space: nowrap; font-family: var(--num); font-variant-numeric: tabular-nums; font-weight: 500; }
   th:first-child, td:first-child { text-align: left; padding-left: 0; }
-  .left { text-align: left; }
-  .pick tbody tr { cursor: pointer; }
-  .pick tbody tr:hover td { background: var(--hover); }
-  tr.sel td { background: var(--sel); font-weight: 700; }
-  tr.off td { color: var(--muted); }
-  .tag { font-size: 11px; padding: 0 6px; border-radius: 4px; border: 1px solid currentColor; color: var(--accent); margin-left: 6px; }
-  .track { display: inline-block; width: 44px; height: 6px; margin-left: 8px; vertical-align: middle; position: relative; }
-  .track span { position: absolute; top: 0; height: 6px; border-radius: 3px; }
-  .track .pos { background: var(--up); } .track .neg { background: var(--down); }
-  .chart { position: relative; min-height: 240px; }
-  .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,.15); padding: 6px 10px; font-size: 12px; white-space: nowrap; }
-  .tip .d { color: var(--muted); }
-  .skel { color: transparent; background: var(--line); border-radius: 6px; }
-  @media (max-width: 560px) { .wide, .track { display: none; } h1 { font-size: 22px; } .val { font-size: 22px; } th, td { padding-inline: 5px; } #strategy-table td:first-child { white-space: normal; min-width: 7em; } }
-  @media (prefers-reduced-motion: no-preference) { .tile, .card { animation: rise .35s ease-out both; } @keyframes rise { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } } }
+  th:last-child, td:last-child { padding-right: 0; }
+  td.t { font-family: var(--font); font-weight: 400; }
+  td .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 400; line-height: 1.25; }
+  td.two { line-height: 1.3; }
+  tr.cat td { height: 40px; background: var(--raised); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 14px; }
+  tr.cat td:first-child { font-family: var(--font); padding-left: 10px; }
+  tr.cat td:last-child { padding-right: 10px; }
+  tbody.pick tr.row { cursor: pointer; }
+  tbody.pick tr.row:hover td { background: var(--raised); }
+  tr.sel td { background: var(--active) !important; }
+  tr.off td { color: var(--faint); }
+  .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 11px; background: var(--active); color: var(--muted); vertical-align: 1px; }
+  .sw { display: inline-block; vertical-align: middle; margin-right: 8px; }
+  td.mob, th.mob { display: none; }
+  tr.quiet td { height: auto; padding: 10px 0 12px; white-space: normal; color: var(--muted); font-size: 13px; line-height: 1.9; }
+  .q-l { margin-right: 10px; }
+  .q-n { display: inline-block; white-space: nowrap; margin-right: 12px; color: var(--faint); }
+  .filter { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; border: 0; background: var(--active); color: var(--link); cursor: pointer; font-size: 13px; font-weight: 500; }
+  .empty-row td { height: 44px; color: var(--muted); font-family: var(--font); font-weight: 400; text-align: left; }
+  .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+  .foot { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+
+  .skel { display: inline-block; height: .9em; width: 4em; border-radius: 4px; background: var(--active); vertical-align: middle; }
+
+  @media (pointer: coarse) { :root { --hit: 44px; } }
+  @media (max-width: 980px) {
+    .perf { grid-template-columns: 1fr; }
+    .perf-side { border-left: 0; border-top: 1px solid var(--border); }
+    .two-col { grid-template-columns: 1fr; }
+    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .kpi:nth-child(4) { border-left: 0; }
+    .kpi:nth-child(n+4) { border-top: 1px solid var(--border); }
+    .kpi:nth-child(5) { grid-column: span 2; }
+  }
+  @media (max-width: 640px) {
+    .bar-in { padding-inline: 16px; }
+    .mark span { display: none; }
+    .page { padding-inline: 16px; padding-top: 16px; }
+    :root { --pad: 16px; --hit: 44px; }
+    h1 { font-size: 28px; }
+    .lead-v { font-size: 34px; }
+    .fresh { font-size: 12px; gap: 8px; }
+    .fresh .btn { padding: 0 12px; }
+    .chart { height: 220px; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpi:nth-child(n) { border-left: 0; border-top: 0; }
+    .kpi:nth-child(even) { border-left: 1px solid var(--border); }
+    .kpi:nth-child(n+3) { border-top: 1px solid var(--border); }
+    .kpi:last-child { grid-column: 1 / -1; border-left: 0; }
+    /* 表格在手機變成兩行的清單：第一行名稱和主要數字，第二行其他欄位 */
+    thead { display: none; }
+    td.dsk { display: none; }
+    td.mob { display: table-cell; }
+    td.mob.l { text-align: left; white-space: normal; }
+    tr.cat td.dsk-cat { display: none; }
+    .tbl-wrap { padding-top: 8px; }
+  }
 </style>
 </head>
 <body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="mark">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="7" width="4" height="9" rx="1" fill="var(--accent)"/><rect x="4.4" y="3" width="1.2" height="16" fill="var(--accent)"/><rect x="9" y="9" width="4" height="7" rx="1" fill="var(--text)"/><rect x="10.4" y="6" width="1.2" height="13" fill="var(--text)"/><rect x="15" y="5" width="4" height="8" rx="1" fill="var(--accent)"/><rect x="16.4" y="2" width="1.2" height="14" fill="var(--accent)"/></svg>
+      <b>QTW 策略</b><span id="scope">XQ 實盤</span>
+    </div>
+    <div class="fresh"><span id="loaded">讀取中…</span><button class="btn" id="reload" type="button">重新整理</button></div>
+  </div>
+</header>
+
 <main class="page">
-  <header class="head">
-    <span class="eyebrow">XQ 台股策略</span>
-    <h1>QTW 策略 Dashboard</h1>
-    <p class="take">資料更新至 <b id="asof">—</b>。累積報酬 <b id="t-ret">—</b>，淨損益 <b id="t-pnl">—</b> 元，共 <b id="t-n">—</b> 趟。</p>
-    <p class="note">累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負只看價差，不扣手續費。紅色賺、綠色賠。</p>
-    <div class="bar"><button class="btn" id="reload" type="button">重新整理</button><span id="loaded">讀取中…</span></div>
-  </header>
+  <div class="title">
+    <h1>策略績效</h1>
+    <p class="finding" id="finding"><span class="skel" style="width:18em"></span></p>
+  </div>
 
-  <p class="alert" id="err" hidden>讀不到試算表。請確認「策略管理」試算表的分享設定是「知道連結的任何人 → 檢視者」，再按重新整理。</p>
+  <p class="alert" id="err" hidden><b>讀不到試算表</b><span id="err-msg">請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。</span><button class="link" id="retry" type="button">再試一次</button></p>
 
-  <section class="kpis" aria-label="總覽數字">
-    <div class="tile"><span class="label">累積報酬</span><span class="val" id="k-ret">—</span></div>
-    <div class="tile"><span class="label">累積淨損益（元）</span><span class="val" id="k-pnl">—</span></div>
-    <div class="tile"><span class="label">總趟數</span><span class="val" id="k-n">—</span></div>
-    <div class="tile"><span class="label">勝率</span><span class="val" id="k-win">—</span></div>
-    <div class="tile"><span class="label">持倉檔數</span><span class="val" id="k-pos">—</span></div>
-    <div class="tile"><span class="label">未實現損益（元）</span><span class="val" id="k-unr">—</span></div>
-    <div class="tile"><span class="label">與電腦資料核對</span><span class="pill" id="k-check">—</span></div>
+  <section class="card perf" aria-labelledby="perf-h">
+    <div class="perf-main">
+      <h2 id="perf-h">總績效</h2>
+      <div class="lead"><span class="lead-v" id="lead-v"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="lead-s"></span></div>
+      <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
+    </div>
+    <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
   </section>
 
-  <section class="card" id="strategies">
-    <div class="card-head"><h2>各策略</h2><p class="sub">點一支策略，下面的持倉和交易就只顯示它。</p></div>
-    <div class="scroll">
-      <table class="pick" id="strategy-table">
-        <thead><tr><th>策略</th><th>趟數</th><th class="wide">勝</th><th class="wide">負</th><th>勝率</th><th>累積報酬</th><th class="wide">淨損益</th><th>持倉</th><th class="wide">未實現</th><th class="wide">最近出場</th></tr></thead>
-        <tbody></tbody>
+  <section class="card kpis" aria-label="其他指標">
+    <div class="kpi"><span class="kpi-l">已實現淨損益</span><span class="kpi-v" id="k-pnl"><span class="skel"></span></span><span class="kpi-s">扣手續費和稅</span></div>
+    <div class="kpi"><span class="kpi-l">勝率</span><span class="kpi-v" id="k-win"><span class="skel"></span></span><span class="kpi-s" id="k-wl">&nbsp;</span></div>
+    <div class="kpi"><span class="kpi-l">持倉</span><span class="kpi-v" id="k-pos"><span class="skel"></span></span><span class="kpi-s" id="k-pos-s">&nbsp;</span></div>
+    <div class="kpi"><span class="kpi-l">未實現損益</span><span class="kpi-v" id="k-unr"><span class="skel"></span></span><span class="kpi-s" id="k-unr-s">&nbsp;</span></div>
+    <div class="kpi"><span class="kpi-l">和電腦資料核對</span><span class="pill" id="k-check">—</span></div>
+  </section>
+
+  <section class="card" aria-labelledby="st-h">
+    <div class="card-h"><h2 id="st-h">各策略</h2><span class="meta">依分類排列，點一列只看那支策略的持倉和交易</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>策略</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>平均每趟</th><th>持倉</th><th>未實現</th><th>最近出場</th></tr></thead>
+        <tbody class="pick" id="st-body"></tbody>
       </table>
     </div>
   </section>
 
-  <section class="card" id="trend">
-    <div class="card-head"><h2>累積報酬走勢</h2><p class="sub">全部策略合計，每趟報酬相加</p></div>
-    <p class="empty" id="trend-empty" hidden>每日資料還沒同步。電腦把 daily_pnl 傳上試算表後，這裡會畫出走勢。</p>
-    <div class="chart" id="chart"></div>
-  </section>
+  <div class="two-col">
+    <section class="card" aria-labelledby="pos-h">
+      <div class="card-h"><h2 id="pos-h">目前持倉</h2><span class="meta" id="pos-meta"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>股票</th><th>多空</th><th>張數</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
+          <tbody id="pos-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="tr-h">
+      <div class="card-h"><h2 id="tr-h">最近交易</h2><span class="meta" id="tr-meta"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>股票</th><th>出場</th><th>多空</th><th>進場</th><th>出場價</th><th>報酬</th></tr></thead>
+          <tbody id="tr-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 
-  <section class="card" id="positions">
-    <div class="card-head"><h2>目前持倉</h2><button class="btn clear" type="button" hidden></button></div>
-    <p class="empty" id="pos-empty" hidden>沒有持倉。</p>
-    <div class="scroll">
-      <table id="position-table">
-        <thead><tr><th class="wide">策略</th><th class="left">股票</th><th>多空</th><th>張數</th><th class="wide">進場日</th><th>均價</th><th>收盤價</th><th class="wide">未實現</th><th>報酬</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="card" id="trips">
-    <div class="card-head"><h2>交易明細</h2><button class="btn clear" type="button" hidden></button></div>
-    <p class="empty" id="trip-empty" hidden>沒有交易。</p>
-    <div class="scroll">
-      <table id="trip-table">
-        <thead><tr><th>出場日</th><th class="wide left">策略</th><th class="left">股票</th><th class="wide">代號</th><th>多空</th><th class="wide">張數</th><th>進場價</th><th>出場價</th><th class="wide">淨損益</th><th>報酬</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
-  <p class="note">資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
+  <p class="foot">累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負只看價差，不扣手續費。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -142,243 +256,454 @@
 (() => {
   const SHEET_ID = '1ZF5fgJgwMrs5sfUYWTpfX0HI9zoZlQL9WxcU4QeZL7U';
   const SRC = {
-    kpi: { sheet: '總覽', range: 'A4:G5' },
-    strategies: { sheet: '總覽', range: 'A8:M' },
-    trips: { sheet: '_trips', range: 'A1:V' },
-    positions: { sheet: '_positions', range: 'A1:L' },
-    daily: { sheet: '_daily', range: 'A1:N' },
+    kpi: { sheet: '總覽', range: 'A4:G5', text: ['與電腦資料核對'] },
+    strategies: { sheet: '總覽', range: 'A8:N', text: ['策略', '狀態', '最近出場日', '分類'] },
+    trips: { sheet: '_trips', range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
+    positions: { sheet: '_positions', range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
+    sync: { sheet: '_sync_log', range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
   };
-  const TEXT = {
-    kpi: ['與電腦資料核對'],
-    strategies: ['策略', '狀態', '最近出場日'],
-    trips: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'],
-    positions: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'],
-    daily: ['date', 'strategy'],
+
+  // 分類：試算表有「分類」欄就用它，沒有就從策略名稱判斷。順序就是畫面上的排列順序。
+  const CATS = ['波段做多', '當沖做空', '隔日沖', '其他'];
+  const catOf = (name, given) => {
+    if (given && String(given).trim()) return String(given).trim();
+    if (/隔日沖/.test(name)) return '隔日沖';
+    if (/(^|_)沖空(_|$)/.test(name)) return '當沖做空';
+    if (/多$/.test(name)) return '波段做多';
+    return '其他';
   };
+  // 各分類一組色系，同組裡再用虛線樣式分開；總績效固定用 --accent
+  const HUES = {
+    light: { '波段做多': ['#30b0c7', '#1c7f91', '#5ac8da', '#0e5f6e'], '當沖做空': ['#ff9500', '#d97a00', '#ffbd59', '#a85f00'], '隔日沖': ['#8e8e93', '#48484a', '#aeaeb2'], '其他': ['#a2845e', '#7d6446'] },
+    dark: { '波段做多': ['#40c8e0', '#2aa3b8', '#7fdcec', '#1d8396'], '當沖做空': ['#ff9f0a', '#e08600', '#ffc266', '#b86e00'], '隔日沖': ['#98989d', '#d1d1d6', '#6e6e73'], '其他': ['#ac8e68', '#8c704f'] },
+  };
+  const DASH = ['', '6 4', '2 3', '10 3 2 3'];
+  const dark = window.matchMedia('(prefers-color-scheme: dark)');
+
+  // 簡稱：去掉分類字和停損參數那段；撞名就用全名
+  const shortOf = (name) => name.replace(/^沖空_/, '').replace(/_沖空$/, '').replace(/_隔日沖$/, '').split('_').filter((p) => !/損/.test(p)).join('_') || name;
 
   const url = (s) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(s.sheet)}&range=${s.range}&t=${Date.now()}`;
   const toNum = (s) => {
     if (s == null) return null;
-    const t = String(s).trim().replace(/,/g, '');
+    const t = String(s).trim().replace(/,/g, '').replace(/−/g, '-');
     if (t === '') return null;
     const pct = t.endsWith('%');
     const n = Number(pct ? t.slice(0, -1) : t);
     return Number.isNaN(n) ? null : (pct ? n / 100 : n);
   };
   const load = async (key) => {
-    const res = await fetch(url(SRC[key]), { cache: 'no-store' });
+    const s = SRC[key];
+    const res = await fetch(url(s), { cache: 'no-store' });
     if (!res.ok) throw new Error(key + ' ' + res.status);
     const body = await res.text();
     if (/^\s*</.test(body)) throw new Error(key + ' not shared');
-    const rows = d3.csvParse(body);
-    const text = TEXT[key];
-    return rows.filter((r) => Object.values(r).some((v) => v !== '')).map((r) => {
+    return d3.csvParse(body).filter((r) => Object.values(r).some((v) => v !== '')).map((r) => {
       const o = {};
       for (const [k, v] of Object.entries(r)) {
         const c = k.trim();
         if (!c) continue;
-        o[c] = text.includes(c) ? (v === '' ? null : v) : toNum(v);
+        o[c] = s.text.includes(c) ? (v === '' ? null : v) : toNum(v);
       }
       return o;
     });
   };
 
+  const MINUS = '−';
   const F = {
-    pct: (v) => (v == null ? '—' : (v > 0 ? '+' : '') + (v * 100).toFixed(2).replace('-', '−') + '%'),
-    rate: (v) => (v == null ? '—' : (v * 100).toFixed(1) + '%'),
-    money: (v) => (v == null ? '—' : (v > 0 ? '+' : '') + d3.format(',')(Math.round(v))),
+    pct: (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? MINUS : '') + Math.abs(v * 100).toFixed(2) + '%'),
+    rate: (v) => (v == null ? '—' : (v * 100).toFixed(0) + '%'),
+    money: (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? MINUS : '') + d3.format(',')(Math.abs(Math.round(v)))),
     int: (v) => (v == null ? '—' : d3.format(',')(v)),
     price: (v) => (v == null ? '—' : String(+Number(v).toFixed(2))),
-    lots: (v) => (v == null ? '—' : String(+Number(v).toFixed(3))),
+    lots: (v) => (v == null ? '—' : String(+Number(v / 1000).toFixed(3))),
     iso: (s) => { const m = /(\d{4})\D(\d{1,2})\D(\d{1,2})/.exec(String(s || '')); return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : ''; },
-    day: (s) => { const p = F.iso(s).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : (s || '—'); },
-    full: (s) => { const p = F.iso(s).split('-'); return p.length === 3 ? p[0] + '/' + Number(p[1]) + '/' + Number(p[2]) : (s || '—'); },
+    day: (s) => { const p = F.iso(s).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : '—'; },
     tone: (v) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down'),
+    hm: (s) => { const m = /(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; },
   };
   const $ = (id) => document.getElementById(id);
-  const setVal = (id, text, tone) => { const el = $(id); el.textContent = text; el.classList.remove('up', 'down'); if (tone) el.classList.add(tone); };
-  const td = (tr, text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; tr.appendChild(c); return c; };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const td = (tr, text, cls) => { const c = el('td', cls, text); tr.appendChild(c); return c; };
+  const two = (tr, main, sub, cls) => { const c = el('td', 'two ' + (cls || '')); const m = el('span', null, main); c.appendChild(m); if (sub) c.appendChild(el('span', 'sub', sub)); tr.appendChild(c); return c; };
+  const store = { get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 私密模式不能存就算了 */ } } };
 
-  let D = null;
-  let picked = null;
+  let D = null;           // 讀到的原始資料
+  let M = null;           // 算好的模型
+  let picked = null;      // 表格點選的策略
+  const MAX_DEFAULT = 6;  // 預設最多疊 6 條策略線（趟數最多的），其他要自己點開
+  let choice = store.get('qtw-lines') || {};  // 使用者點過的開關：{策略: true/false}
+  let hidden = new Set();
 
-  const renderKpi = () => {
-    const k = D.kpi[0] || {};
-    setVal('k-ret', F.pct(k['累積報酬率']), F.tone(k['累積報酬率']));
-    setVal('k-pnl', F.money(k['累積淨損益']), F.tone(k['累積淨損益']));
-    setVal('k-n', F.int(k['總趟數']));
-    setVal('k-win', F.rate(k['勝率']));
-    setVal('k-pos', F.int(k['持倉檔數']));
-    setVal('k-unr', F.money(k['未實現損益']), F.tone(k['未實現損益']));
-    const chk = $('k-check'); const s = k['與電腦資料核對'] || '—';
-    chk.textContent = s; chk.classList.toggle('ok', s === '一致'); chk.classList.toggle('bad', s === '不一致');
-    setVal('t-ret', F.pct(k['累積報酬率']), F.tone(k['累積報酬率']));
-    setVal('t-pnl', F.money(k['累積淨損益']), F.tone(k['累積淨損益']));
-    setVal('t-n', F.int(k['總趟數']));
-    const days = [...D.trips.map((r) => F.iso(r.exit_date)), ...D.positions.map((r) => F.iso(r.date))].filter(Boolean).sort();
-    $('asof').textContent = days.length ? F.full(days[days.length - 1]) : '—';
+  // ---- 把資料整理成畫面要的樣子 ----
+  const build = () => {
+    const rows = D.strategies.filter((r) => r['策略']);
+    const names = new Set(rows.map((r) => r['策略']));
+    D.trips.forEach((t) => { if (t.strategy && !names.has(t.strategy)) { names.add(t.strategy); rows.push({ '策略': t.strategy, '狀態': '未登錄' }); } });
+    const shorts = new Map();
+    rows.forEach((r) => { const s = shortOf(r['策略']); shorts.set(s, (shorts.get(s) || 0) + 1); });
+    const strat = rows.map((r) => {
+      const name = r['策略'];
+      const s = shortOf(name);
+      return { name, short: shorts.get(s) > 1 ? name : s, cat: catOf(name, r['分類']), status: r['狀態'], n: r['趟數'] || 0, w: r['勝'] || 0, l: r['負'] || 0, t: r['平'] || 0, ret: r['累積報酬率'] || 0, pnl: r['淨損益'] || 0, avg: r['平均每趟'], pos: r['持倉檔數'] || 0, unr: r['未實現'] || 0, last: r['最近出場日'] };
+    });
+    // 線條樣式依分類內的名稱順序固定分配，每天打開顏色都一樣
+    const theme = dark.matches ? 'dark' : 'light';
+    CATS.concat([...new Set(strat.map((s) => s.cat))].filter((c) => !CATS.includes(c))).forEach((c) => {
+      const pal = HUES[theme][c] || HUES[theme]['其他'];
+      strat.filter((s) => s.cat === c).sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i + Math.floor(i / pal.length)) % DASH.length]; });
+    });
+    // 每趟報酬依出場日累加，總績效是全部策略加總（和總覽的累積報酬率同一個算法）
+    const trips = D.trips.map((t) => ({ ...t, d: F.iso(t.exit_date) })).filter((t) => t.d);
+    const dates = [...new Set(trips.map((t) => t.d))].sort();
+    const byDay = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.strategy, (t) => t.d);
+    const series = new Map();
+    strat.forEach((s) => {
+      const m = byDay.get(s.name);
+      if (!m) return;
+      let c = 0;
+      series.set(s.name, dates.map((d) => (c += m.get(d) || 0)));
+    });
+    let c = 0;
+    const dayTot = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.d);
+    const total = dates.map((d) => (c += dayTot.get(d) || 0));
+    const lastPosDate = d3.max(D.positions, (p) => F.iso(p.date)) || '';
+    const positions = D.positions.filter((p) => F.iso(p.date) === lastPosDate);
+    M = { strat, dates, series, total, positions, lastPosDate, trips };
+    applyDefaults();
   };
 
+  const ordered = () => {
+    const out = [];
+    const cats = [...new Set(M.strat.map((s) => s.cat))].sort((a, b) => (CATS.indexOf(a) + 1 || 99) - (CATS.indexOf(b) + 1 || 99));
+    cats.forEach((c) => out.push({ cat: c, items: M.strat.filter((s) => s.cat === c).sort((a, b) => (b.n > 0) - (a.n > 0) || b.ret - a.ret || a.name.localeCompare(b.name, 'zh-Hant')) }));
+    return out;
+  };
+
+  const swatch = (color, dash, w) => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', 22); svg.setAttribute('height', 10); svg.setAttribute('aria-hidden', 'true'); svg.classList.add('sw');
+    const ln = document.createElementNS(ns, 'line');
+    ln.setAttribute('x1', 1); ln.setAttribute('x2', 21); ln.setAttribute('y1', 5); ln.setAttribute('y2', 5);
+    ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', w || 2); ln.setAttribute('stroke-linecap', 'round');
+    if (dash) ln.setAttribute('stroke-dasharray', dash);
+    svg.appendChild(ln);
+    return svg;
+  };
+
+  // ---- 標題下的一句話：最近一個出場日的結果，和持倉裡跌最多的一檔 ----
+  const renderFinding = () => {
+    const p = $('finding'); p.replaceChildren();
+    const add = (t, cls) => p.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    if (!M.dates.length && !M.positions.length) { add('還沒有實盤交易紀錄。'); return; }
+    if (M.dates.length) {
+      const d = M.dates[M.dates.length - 1];
+      const ts = M.trips.filter((t) => t.d === d);
+      add(F.day(d) + ' 出場 '); add(String(ts.length), 'n'); add(' 趟，淨損益 ');
+      const pnl = d3.sum(ts, (t) => t.net_pnl || 0); add(F.money(pnl) + ' 元', 'n ' + F.tone(pnl)); add('。');
+    }
+    if (M.positions.length) {
+      const worst = M.positions.reduce((a, b) => ((b.unrealized_pct ?? 0) < (a.unrealized_pct ?? 0) ? b : a));
+      if ((worst.unrealized_pct ?? 0) < 0) { add('持倉中 ' + (worst.name || worst.code) + ' 跌最多，'); add(F.pct(worst.unrealized_pct), 'n down'); add('。'); }
+      else { add('持倉 '); add(String(M.positions.length), 'n'); add(' 檔都在成本之上。'); }
+    }
+  };
+
+  const renderLead = () => {
+    const k = D.kpi[0] || {};
+    const v = $('lead-v'); v.textContent = F.pct(k['累積報酬率']); v.className = 'lead-v ' + F.tone(k['累積報酬率']);
+    const s = $('lead-s'); s.replaceChildren();
+    const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    add('已實現，'); add(F.int(k['總趟數']), 'n'); add(' 趟');
+    if (M.dates.length) { add('・' + F.day(M.dates[0]) + ' 到 ' + F.day(M.dates[M.dates.length - 1])); }
+  };
+
+  const renderKpis = () => {
+    const k = D.kpi[0] || {};
+    const set = (id, text, tone, unit) => { const e = $(id); e.replaceChildren(document.createTextNode(text)); e.className = 'kpi-v ' + (tone || ''); if (unit) e.appendChild(el('small', null, unit)); };
+    set('k-pnl', F.money(k['累積淨損益']), F.tone(k['累積淨損益']), '元');
+    const n = k['總趟數'] || 0;
+    const W = d3.sum(M.strat, (s) => s.w), L = d3.sum(M.strat, (s) => s.l), T = d3.sum(M.strat, (s) => s.t);
+    set('k-win', n ? F.rate(k['勝率']) : '—');
+    $('k-wl').textContent = n ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '還沒有出場';
+    set('k-pos', F.int(k['持倉檔數']), '', '檔');
+    $('k-pos-s').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤' : '';
+    set('k-unr', F.money(k['未實現損益']), F.tone(k['未實現損益']), '元');
+    const cost = d3.sum(M.positions, (p) => (p.avg_cost || 0) * (p.shares || 0));
+    $('k-unr-s').textContent = cost ? '佔持倉成本 ' + F.pct((k['未實現損益'] || 0) / cost) : '';
+    const chk = $('k-check'); const s = k['與電腦資料核對'] || '—';
+    chk.textContent = s; chk.className = 'pill' + (s === '一致' ? ' ok' : s === '不一致' ? ' bad' : '');
+  };
+
+  // ---- 右側開關清單 ----
+  const renderToggles = () => {
+    const box = $('toggles'); box.replaceChildren();
+    const tot = el('div', 'tg total');
+    tot.appendChild(swatch(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), '', 3));
+    tot.appendChild(el('span', 'tg-name', '總績效'));
+    const tv = el('span', 'n ' + F.tone(M.total[M.total.length - 1] || 0), F.pct(M.total.length ? M.total[M.total.length - 1] : 0)); tot.appendChild(tv);
+    box.appendChild(tot);
+    let idle = 0;
+    ordered().forEach(({ cat, items }) => {
+      const live = items.filter((s) => M.series.has(s.name));
+      idle += items.length - live.length;
+      if (!live.length) return;
+      const g = el('div', 'grp');
+      const h = el('button', 'grp-h'); h.type = 'button';
+      const allOn = live.every((s) => !hidden.has(s.name));
+      h.setAttribute('aria-pressed', String(allOn));
+      h.title = allOn ? '關掉這一類' : '打開這一類';
+      h.appendChild(el('span', null, cat));
+      const sum = d3.sum(live, (s) => s.ret);
+      h.appendChild(el('span', 'n ' + F.tone(sum), F.pct(sum)));
+      h.addEventListener('click', () => { live.forEach((s) => (allOn ? hidden.add(s.name) : hidden.delete(s.name))); saveHidden(); renderToggles(); renderChart(); });
+      g.appendChild(h);
+      live.forEach((s) => {
+        const b = el('button', 'tg'); b.type = 'button';
+        b.setAttribute('aria-pressed', String(!hidden.has(s.name)));
+        b.title = s.name;
+        b.appendChild(swatch(s.color, s.dash));
+        b.appendChild(el('span', 'tg-name', s.short));
+        b.appendChild(el('span', 'n ' + F.tone(s.ret), F.pct(s.ret)));
+        b.addEventListener('click', () => { hidden.has(s.name) ? hidden.delete(s.name) : hidden.add(s.name); saveHidden(); renderToggles(); renderChart(); });
+        g.appendChild(b);
+      });
+      box.appendChild(g);
+    });
+    if (idle) box.appendChild(el('p', 'idle', `另有 ${idle} 支策略還沒有出場紀錄，有交易後會自動出現在這裡。`));
+  };
+  const saveHidden = () => { M.strat.forEach((s) => { if (M.series.has(s.name)) choice[s.name] = !hidden.has(s.name); }); store.set('qtw-lines', choice); };
+  const applyDefaults = () => {
+    const live = M.strat.filter((s) => M.series.has(s.name)).sort((a, b) => b.n - a.n || Math.abs(b.ret) - Math.abs(a.ret));
+    const top = new Set(live.slice(0, MAX_DEFAULT).map((s) => s.name));
+    hidden = new Set(live.filter((s) => (s.name in choice ? !choice[s.name] : !top.has(s.name))).map((s) => s.name));
+  };
+
+  // ---- 總績效圖 ----
+  const renderChart = () => {
+    const box = $('chart');
+    box.querySelectorAll('svg, .tip').forEach((n) => n.remove());
+    const empty = $('chart-empty');
+    if (!M.dates.length) { empty.hidden = false; empty.textContent = '還沒有出場紀錄，第一趟出場後會畫出走勢。'; return; }
+    empty.hidden = true;
+    box.style.height = M.dates.length < 3 ? '200px' : '';
+    const css = getComputedStyle(document.documentElement);
+    const col = (n) => css.getPropertyValue(n).trim();
+    const W = Math.max(280, box.clientWidth), H = box.clientHeight || 300;
+    // 起點放在第一個出場日的前一天，從 0 開始
+    const t0 = d3.utcDay.offset(new Date(M.dates[0] + 'T00:00:00Z'), -1);
+    const xs = [t0, ...M.dates.map((d) => new Date(d + 'T00:00:00Z'))];
+    const lines = [];
+    ordered().forEach(({ items }) => items.forEach((s) => { if (M.series.has(s.name) && !hidden.has(s.name)) lines.push({ s, v: [0, ...M.series.get(s.name)] }); }));
+    const totalV = [0, ...M.total];
+    const all = [totalV, ...lines.map((l) => l.v)].flat();
+    let lo = Math.min(0, d3.min(all)), hi = Math.max(0, d3.max(all));
+    if (hi - lo < 0.01) { hi += 0.005; lo -= 0.005; }
+    const y = d3.scaleLinear([lo, hi], [H - 26, 8]).nice(5);
+    const ticks = y.ticks(5);
+    const step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 0.01;
+    const fy = (v) => (v === 0 ? '0%' : (v > 0 ? '' : MINUS) + Math.abs(v * 100).toFixed(step < 0.01 ? 1 : 0) + '%');
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', '總績效與各策略累積報酬走勢');
+    const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--num)');
+    let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
+    const endText = F.pct(M.total[M.total.length - 1]);
+    probe.text(endText); const endW = probe.node().getComputedTextLength(); probe.remove();
+    const m = { l: left + 10, r: endW + 14 };
+    const x = d3.scaleUtc(d3.extent(xs), [m.l, W - m.r]);
+    const g = svg.append('g').style('font-family', 'var(--num)').attr('font-size', 12);
+    g.selectAll('line.gl').data(ticks).join('line').attr('class', 'gl').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y)
+      .attr('stroke', (t) => (t === 0 ? col('--faint') : col('--grid'))).attr('stroke-width', 1);
+    g.selectAll('text.yt').data(ticks).join('text').attr('class', 'yt').attr('x', m.l - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', col('--muted')).text(fy);
+    const span = (W - m.l - m.r);
+    const xt = xs.length <= 7 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
+    g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
+    const line = d3.line().x((d, i) => x(xs[i])).y((d) => y(d));
+    lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.s.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.s.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
+    g.append('path').datum(totalV).attr('d', line).attr('fill', 'none').attr('stroke', col('--accent')).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+    const lx = x(xs[xs.length - 1]), ly = y(totalV[totalV.length - 1]);
+    g.append('circle').attr('cx', lx).attr('cy', ly).attr('r', 4).attr('fill', col('--accent'));
+    const endV = totalV[totalV.length - 1];
+    g.append('text').attr('x', lx + 8).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
+
+    // 滑過去看那一天每條線的數字
+    const tip = d3.select(box).append('div').attr('class', 'tip').style('display', 'none');
+    const rule = g.append('line').attr('y1', 8).attr('y2', H - 26).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
+    const dots = g.append('g').style('display', 'none');
+    const bis = d3.bisector((d) => d).center;
+    const move = (ev) => {
+      const [px] = d3.pointer(ev, svg.node());
+      const i = Math.max(1, bis(xs, x.invert(px)));
+      const xi = x(xs[i]);
+      rule.style('display', null).attr('x1', xi).attr('x2', xi);
+      dots.style('display', null).selectAll('*').remove();
+      [...lines.map((l) => ({ c: l.s.color, v: l.v[i] })), { c: col('--accent'), v: totalV[i] }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', 3.5).attr('fill', p.c));
+      tip.style('display', null).selectAll('*').remove();
+      tip.append('div').attr('class', 'd').text(F.day(M.dates[i - 1]) + ' 收盤後');
+      const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
+      row(swatch(col('--accent'), '', 3), '總績效', totalV[i], 'tot');
+      lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.s.color, l.s.dash), l.s.short, l.v[i]));
+      const bw = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+      const scale = bw / W;
+      let left = xi * scale + 14; if (left + tw > bw) left = xi * scale - tw - 14;
+      tip.style('left', Math.max(0, left) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
+    };
+    const hide = () => { tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
+    svg.style('touch-action', 'pan-y');
+    svg.on('pointermove', move).on('pointerdown', move).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') hide(); });
+    hideTip = hide;
+  };
+
+  // ---- 各策略表（依分類分組，每組有小計） ----
   const renderStrategies = () => {
-    const tb = document.querySelector('#strategy-table tbody');
-    tb.replaceChildren();
-    const rows = D.strategies.filter((r) => r['策略']);
-    const maxAbs = d3.max(rows, (r) => Math.abs(r['累積報酬率'] || 0)) || 0;
-    rows.forEach((r) => {
-      const tr = document.createElement('tr');
-      tr.tabIndex = 0; tr.dataset.strategy = r['策略'];
-      if (picked === r['策略']) tr.classList.add('sel');
-      if (r['狀態'] === '停用' || (!r['趟數'] && !r['持倉檔數'])) tr.classList.add('off');
-      const name = td(tr, r['策略'], 't');
-      if (r['狀態'] && r['狀態'] !== '啟用') { const t = document.createElement('span'); t.className = 'tag'; t.textContent = r['狀態']; name.appendChild(t); }
-      td(tr, F.int(r['趟數']));
-      td(tr, F.int(r['勝']), 'wide');
-      td(tr, F.int(r['負']), 'wide');
-      td(tr, r['趟數'] ? F.rate(r['勝率']) : '—');
-      const ret = r['累積報酬率'];
-      const c = td(tr, F.pct(ret), F.tone(ret));
-      const track = document.createElement('span'); track.className = 'track';
-      if (ret && maxAbs) { const b = document.createElement('span'); const w = Math.max(2, Math.abs(ret) / maxAbs * 22); b.className = ret > 0 ? 'pos' : 'neg'; b.style.width = w + 'px'; b.style.left = ret > 0 ? '22px' : (22 - w) + 'px'; track.appendChild(b); }
-      c.appendChild(track);
-      td(tr, F.money(r['淨損益']), 'wide ' + F.tone(r['淨損益']));
-      td(tr, F.int(r['持倉檔數']));
-      td(tr, F.money(r['未實現']), 'wide ' + F.tone(r['未實現']));
-      td(tr, r['最近出場日'] ? F.day(r['最近出場日']) : '—', 'wide');
-      tb.appendChild(tr);
+    const tb = $('st-body'); tb.replaceChildren();
+    ordered().forEach(({ cat, items }) => {
+      const n = d3.sum(items, (s) => s.n), w = d3.sum(items, (s) => s.w), l = d3.sum(items, (s) => s.l);
+      const ret = d3.sum(items, (s) => s.ret), pnl = d3.sum(items, (s) => s.pnl), pos = d3.sum(items, (s) => s.pos), unr = d3.sum(items, (s) => s.unr);
+      const h = el('tr', 'cat');
+      td(h, `${cat}（${items.length} 支）`, 'dsk');
+      td(h, F.int(n), 'dsk'); td(h, n ? F.rate(w / n) : '—', 'dsk'); td(h, F.pct(ret), 'dsk ' + F.tone(ret)); td(h, F.money(pnl), 'dsk ' + F.tone(pnl));
+      td(h, n ? F.pct(ret / n) : '—', 'dsk'); td(h, F.int(pos), 'dsk'); td(h, pos ? F.money(unr) : '—', 'dsk ' + (pos ? F.tone(unr) : '')); td(h, '', 'dsk');
+      td(h, `${cat}（${items.length} 支）`, 'mob l'); td(h, F.pct(ret), 'mob ' + F.tone(ret));
+      tb.appendChild(h);
+      const quiet = items.filter((s) => !s.n && !s.pos);
+      items.filter((s) => s.n || s.pos).forEach((s) => {
+        const tr = el('tr', 'row'); tr.tabIndex = 0; tr.dataset.strategy = s.name; tr.title = s.name;
+        if (picked === s.name) tr.classList.add('sel');
+        if (s.status === '停用' || (!s.n && !s.pos)) tr.classList.add('off');
+        const c = td(tr, '', 't dsk');
+        c.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); c.appendChild(document.createTextNode(s.short));
+        if (s.status && s.status !== '啟用') c.appendChild(el('span', 'tag', s.status));
+        td(tr, F.int(s.n), 'dsk');
+        two(tr, s.n ? F.rate(s.w / s.n) : '—', s.n ? `${s.w}勝${s.l}負${s.t ? s.t + '平' : ''}` : null, 'dsk');
+        td(tr, F.pct(s.ret), 'dsk ' + F.tone(s.ret));
+        td(tr, F.money(s.pnl), 'dsk ' + F.tone(s.pnl));
+        td(tr, s.n ? F.pct(s.avg) : '—', 'dsk ' + (s.n ? F.tone(s.avg) : ''));
+        td(tr, F.int(s.pos), 'dsk');
+        td(tr, s.pos ? F.money(s.unr) : '—', 'dsk ' + (s.pos ? F.tone(s.unr) : ''));
+        td(tr, s.last ? F.day(s.last) : '—', 'dsk');
+        // 手機：兩行
+        const mc = el('td', 'mob l t two');
+        const top = el('span'); top.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); top.appendChild(document.createTextNode(s.short));
+        if (s.status && s.status !== '啟用') top.appendChild(el('span', 'tag', s.status));
+        mc.appendChild(top);
+        mc.appendChild(el('span', 'sub', s.n || s.pos ? `${s.n} 趟${s.n ? '・' + s.w + '勝' + s.l + '負' : ''}・淨 ${F.money(s.pnl)}${s.pos ? '・持倉 ' + s.pos + '（' + F.money(s.unr) + '）' : ''}` : '還沒有交易'));
+        tr.appendChild(mc);
+        td(tr, F.pct(s.ret), 'mob ' + F.tone(s.ret));
+        tb.appendChild(tr);
+      });
+      if (quiet.length) {
+        const q = el('tr', 'quiet');
+        const c = el('td', 't'); c.colSpan = 9;
+        c.appendChild(el('span', 'q-l', `還沒有交易（${quiet.length} 支）`));
+        quiet.forEach((s) => { const n = el('span', 'q-n', s.short); n.title = s.name; if (s.status && s.status !== '啟用') n.appendChild(el('span', 'tag', s.status)); c.appendChild(n); });
+        q.appendChild(c); tb.appendChild(q);
+      }
     });
   };
+  const blank = () => { const b = el('span', 'sw'); b.style.width = '22px'; return b; };
 
-  const latestPositions = () => {
-    const last = D.positions.reduce((m, r) => (F.iso(r.date) > m ? F.iso(r.date) : m), '');
-    return D.positions.filter((r) => F.iso(r.date) === last);
+  const emptyRow = (tb, cols, text) => { const tr = el('tr', 'empty-row'); const c = td(tr, text); c.colSpan = cols; tb.appendChild(tr); };
+  const filterChip = (meta, base) => {
+    meta.replaceChildren(document.createTextNode(base));
+    if (!picked) return;
+    const b = el('button', 'filter'); b.type = 'button'; b.textContent = '只看 ' + shortOf(picked) + '  ✕'; b.title = '顯示全部';
+    b.addEventListener('click', () => { picked = null; renderFiltered(); });
+    meta.replaceChildren(b);
   };
 
   const renderPositions = () => {
-    const tb = document.querySelector('#position-table tbody');
-    tb.replaceChildren();
-    const rows = latestPositions().filter((r) => !picked || r.strategy === picked);
-    rows.forEach((r) => {
-      const tr = document.createElement('tr');
-      td(tr, r.strategy, 'wide t');
-      td(tr, r.name || r.code, 'left t');
-      td(tr, r.side === 'short' ? '空' : '多', 't');
-      td(tr, F.lots(r.shares == null ? null : r.shares / 1000));
-      td(tr, F.day(r.entry_date), 'wide');
-      td(tr, F.price(r.avg_cost));
-      td(tr, F.price(r.close_price));
-      td(tr, F.money(r.unrealized_pnl), 'wide ' + F.tone(r.unrealized_pnl));
-      td(tr, F.pct(r.unrealized_pct), F.tone(r.unrealized_pct));
+    const tb = $('pos-body'); tb.replaceChildren();
+    const rows = M.positions.filter((p) => !picked || p.strategy === picked).sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
+    filterChip($('pos-meta'), M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + rows.length + ' 檔' : '');
+    if (!rows.length) { emptyRow(tb, 6, picked ? '這支策略目前沒有持倉。' : '目前沒有持倉。'); return; }
+    rows.forEach((p) => {
+      const tr = el('tr');
+      two(tr, p.name || p.code, shortOf(p.strategy || '') + '・' + F.day(p.entry_date) + ' 進場', 't dsk');
+      td(tr, p.side === 'short' ? '空' : '多', 't dsk');
+      td(tr, F.lots(p.shares), 'dsk');
+      td(tr, F.price(p.avg_cost), 'dsk');
+      td(tr, F.price(p.close_price), 'dsk');
+      two(tr, F.money(p.unrealized_pnl), F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pnl));
+      const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (p.name || p.code) + '　' + (p.side === 'short' ? '空' : '多') + ' ' + F.lots(p.shares) + ' 張'));
+      mc.appendChild(el('span', 'sub', shortOf(p.strategy || '') + '・均價 ' + F.price(p.avg_cost) + '・收盤 ' + F.price(p.close_price))); tr.appendChild(mc);
+      two(tr, F.pct(p.unrealized_pct), F.money(p.unrealized_pnl), 'mob ' + F.tone(p.unrealized_pnl));
       tb.appendChild(tr);
     });
-    $('pos-empty').hidden = rows.length !== 0;
   };
 
   const renderTrips = () => {
-    const tb = document.querySelector('#trip-table tbody');
-    tb.replaceChildren();
-    const key = (r) => F.iso(r.exit_date) + ' ' + String(r.exit_time || '').padStart(8, '0');
-    const rows = D.trips.filter((r) => !picked || r.strategy === picked).sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
-    rows.forEach((r) => {
-      const tr = document.createElement('tr');
-      td(tr, F.day(r.exit_date));
-      td(tr, r.strategy, 'wide left t');
-      td(tr, r.name || r.code, 'left t');
-      td(tr, r.code, 'wide');
-      td(tr, r.side === 'short' ? '空' : '多', 't');
-      td(tr, F.lots(r.shares == null ? null : r.shares / 1000), 'wide');
-      td(tr, F.price(r.entry_price));
-      td(tr, F.price(r.exit_price));
-      td(tr, F.money(r.net_pnl), 'wide ' + F.tone(r.net_pnl));
-      td(tr, F.pct(r.return_pct), F.tone(r.return_pct));
+    const tb = $('tr-body'); tb.replaceChildren();
+    const key = (t) => t.d + ' ' + F.hm(t.exit_time);
+    const all = M.trips.filter((t) => !picked || t.strategy === picked).sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const rows = all.slice(0, Math.max(5, Math.min(8, M.positions.length + 2)));
+    filterChip($('tr-meta'), all.length > rows.length ? `最近 ${rows.length} 趟，共 ${all.length} 趟` : `共 ${all.length} 趟`);
+    if (!rows.length) { emptyRow(tb, 6, picked ? '這支策略還沒有出場紀錄。' : '還沒有出場紀錄。'); return; }
+    rows.forEach((t) => {
+      const tr = el('tr');
+      two(tr, t.name || t.code, shortOf(t.strategy || '') + '・' + (t.trade_type === 'daytrade' ? '當沖' : '波段'), 't dsk');
+      two(tr, F.day(t.d), F.hm(t.exit_time), 'dsk');
+      td(tr, t.side === 'short' ? '空' : '多', 't dsk');
+      td(tr, F.price(t.entry_price), 'dsk');
+      td(tr, F.price(t.exit_price), 'dsk');
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'dsk ' + F.tone(t.return_pct));
+      const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (t.name || t.code) + '　' + (t.side === 'short' ? '空' : '多') + ' ' + F.price(t.entry_price) + ' → ' + F.price(t.exit_price)));
+      mc.appendChild(el('span', 'sub', F.day(t.d) + ' ' + F.hm(t.exit_time) + '・' + shortOf(t.strategy || '') + '・' + F.lots(t.shares) + ' 張')); tr.appendChild(mc);
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'mob ' + F.tone(t.return_pct));
       tb.appendChild(tr);
     });
-    $('trip-empty').hidden = rows.length !== 0;
   };
 
-  const renderPicked = () => {
-    document.querySelectorAll('.clear').forEach((b) => { b.hidden = !picked; b.textContent = picked ? '只看 ' + picked + '　✕' : ''; });
-  };
+  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; };
+  const renderFiltered = () => { if (!M) return; renderStrategies(); renderPositions(); renderTrips(); };
 
-  const renderTrend = () => {
-    const el = $('chart');
-    el.replaceChildren();
-    const parse = (s) => new Date(F.iso(s) + 'T00:00:00Z');
-    const rows = D.daily.filter((r) => r.strategy === 'ALL' && r.date && r.cum_pct != null)
-      .map((r) => ({ ...r, t: parse(r.date) })).filter((r) => !Number.isNaN(+r.t)).sort((a, b) => a.t - b.t);
-    $('trend-empty').hidden = rows.length !== 0;
-    el.style.minHeight = rows.length ? '' : '0';
-    if (!rows.length) return;
-    const W = Math.max(280, el.clientWidth || 600), H = 240;
-    const css = getComputedStyle(document.documentElement);
-    const col = (n) => css.getPropertyValue(n).trim();
-    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block').style('overflow', 'visible');
-    const lo = Math.min(0, d3.min(rows, (r) => r.cum_pct)), hi = Math.max(0, d3.max(rows, (r) => r.cum_pct));
-    const pad = (hi - lo) * 0.1 || 0.01;
-    const y = d3.scaleLinear([lo - pad, hi + pad], [H - 24, 10]).nice(4);
-    const fy = d3.format('.0%'), ticks = y.ticks(4);
-    const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--font-num)');
-    let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
-    const last = rows[rows.length - 1];
-    probe.text(F.pct(last.cum_pct)); const endW = probe.node().getComputedTextLength(); probe.remove();
-    const m = { l: left + 10, r: endW + 14 };
-    const x = d3.scaleUtc(d3.extent(rows, (r) => r.t), [m.l, W - m.r]);
-    if (rows.length === 1) x.domain([d3.utcDay.offset(rows[0].t, -1), d3.utcDay.offset(rows[0].t, 1)]);
-    const g = svg.append('g').style('font-family', 'var(--font-num)');
-    g.selectAll('line').data(ticks).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y)
-      .attr('stroke', (t) => (t === 0 ? col('--muted') : col('--line'))).attr('stroke-width', 1);
-    g.selectAll('text.yt').data(ticks).join('text').attr('class', 'yt').attr('x', m.l - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 12).attr('fill', col('--muted')).text(fy);
-    const xt = x.ticks(Math.max(2, Math.min(6, Math.floor((W - m.l - m.r) / 90))));
-    g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 4).attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
-    g.append('path').datum(rows).attr('d', d3.line().x((r) => x(r.t)).y((r) => y(r.cum_pct))).attr('fill', 'none').attr('stroke', col('--accent')).attr('stroke-width', 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
-    g.append('circle').attr('cx', x(last.t)).attr('cy', y(last.cum_pct)).attr('r', 4).attr('fill', col('--accent'));
-    g.append('text').attr('x', x(last.t) + 8).attr('y', y(last.cum_pct)).attr('dy', '0.32em').attr('font-size', 12)
-      .attr('fill', last.cum_pct > 0 ? col('--up') : last.cum_pct < 0 ? col('--down') : col('--fg')).text(F.pct(last.cum_pct));
-    const tip = d3.select(el).append('div').attr('class', 'tip').style('display', 'none');
-    const dot = g.append('circle').attr('r', 4).attr('fill', col('--accent')).style('display', 'none');
-    const bis = d3.bisector((r) => r.t).center;
-    svg.on('pointermove', (ev) => {
-      const [px] = d3.pointer(ev);
-      const r = rows[bis(rows, x.invert(px))];
-      if (!r) return;
-      const scale = (svg.node().getBoundingClientRect().width || W) / W;
-      dot.style('display', null).attr('cx', x(r.t)).attr('cy', y(r.cum_pct));
-      tip.style('display', null).selectAll('*').remove();
-      tip.append('div').attr('class', 'd').text(F.full(r.date));
-      tip.append('div').text('累積 ' + F.pct(r.cum_pct));
-      tip.append('div').text('當日 ' + F.pct(r.day_pct) + '・' + F.money(r.realized_pnl) + ' 元');
-      const tw = tip.node().offsetWidth;
-      tip.style('left', Math.min(Math.max(0, x(r.t) * scale - tw / 2), el.clientWidth - tw) + 'px').style('top', Math.max(0, y(r.cum_pct) * scale - 70) + 'px');
-    }).on('pointerleave', () => { tip.style('display', 'none'); dot.style('display', 'none'); });
-  };
+  // 手機：手指放開後提示留著，點圖以外的地方才收起來
+  let hideTip = () => {};
+  document.addEventListener('pointerdown', (ev) => { if (!$('chart').contains(ev.target)) hideTip(); }, { passive: true });
 
-  const renderAll = () => { if (!D) return; renderKpi(); renderStrategies(); renderPositions(); renderTrips(); renderPicked(); renderTrend(); };
-  const renderFiltered = () => { if (!D) return; renderStrategies(); renderPositions(); renderTrips(); renderPicked(); };
-
-  let busy = false;
+  let busy = false, lastOk = null;
   const refresh = async () => {
     if (busy) return; busy = true;
     $('loaded').textContent = '讀取中…';
     try {
       const keys = Object.keys(SRC);
-      const vals = await Promise.all(keys.map(load));
+      const vals = await Promise.all(keys.map((k) => (SRC[k].optional ? load(k).catch(() => []) : load(k))));
       D = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
       $('err').hidden = true;
       renderAll();
-      const now = new Date();
-      $('loaded').textContent = '已更新 ' + now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+      lastOk = new Date();
+      const hhmm = lastOk.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const pushed = (D.sync || []).map((r) => /(\d{4})\D(\d{1,2})\D(\d{1,2})\D+(\d{1,2}):(\d{2})/.exec(String(r['同步時間'] || ''))).filter(Boolean).pop();
+      const lb = $('loaded');
+      if (pushed) {
+        const when = new Date(+pushed[1], pushed[2] - 1, +pushed[3], +pushed[4], +pushed[5]);
+        lb.textContent = '電腦 ' + (+pushed[2]) + '/' + (+pushed[3]) + ' ' + pushed[4].padStart(2, '0') + ':' + pushed[5] + ' 推送';
+        // 超過 2 天沒推送（跨週末也夠用）就提醒
+        lb.classList.toggle('stale', Date.now() - when.getTime() > 2.5 * 864e5);
+        if (lb.classList.contains('stale')) lb.textContent += '・很久沒更新';
+      } else { lb.textContent = hhmm + ' 讀取'; lb.classList.remove('stale'); }
+      lb.title = '網頁 ' + hhmm + ' 讀取試算表';
     } catch (e) {
       $('err').hidden = false;
-      $('loaded').textContent = D ? '這次沒讀到，先顯示上一次的資料' : '沒有讀到資料';
+      const why = /not shared/.test(e.message) ? '請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。'
+        : /Failed to fetch|NetworkError|Load failed/i.test(e.message) ? '網路連不上 Google，等一下再試。'
+        : '讀取「' + e.message.split(' ')[0] + '」時出錯（' + e.message + '）。';
+      $('err-msg').textContent = lastOk
+        ? '這次沒讀到，畫面是 ' + lastOk.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' 的資料。' : why;
+      $('loaded').textContent = lastOk ? '更新失敗' : '沒有讀到資料';
+      if (!D) { $('finding').textContent = '等試算表讀到後顯示。'; document.querySelectorAll('.skel').forEach((k) => k.replaceWith(document.createTextNode('—'))); }
     } finally { busy = false; }
   };
 
   const pick = (tr) => { const s = tr && tr.dataset.strategy; if (!s) return; picked = picked === s ? null : s; renderFiltered(); };
-  const tb = document.querySelector('#strategy-table tbody');
-  tb.addEventListener('click', (ev) => pick(ev.target.closest('tr')));
-  tb.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(ev.target.closest('tr')); } });
-  document.querySelectorAll('.clear').forEach((b) => b.addEventListener('click', () => { picked = null; renderFiltered(); }));
+  const st = $('st-body');
+  st.addEventListener('click', (ev) => pick(ev.target.closest('tr.row')));
+  st.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(ev.target.closest('tr.row')); } });
   $('reload').addEventListener('click', refresh);
-  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => D && renderTrend(), 150); });
+  $('retry').addEventListener('click', refresh);
+  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => M && renderChart(), 150); });
+  dark.addEventListener('change', () => D && renderAll());
   setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 5 * 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && D) refresh(); });
   refresh();
