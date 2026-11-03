@@ -74,14 +74,15 @@
 
   /* 總績效 */
   .perf { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-  .perf-main { padding: 16px var(--pad) 12px; min-width: 0; }
+  .perf-main { padding: 16px var(--pad) 12px; min-width: 0; display: flex; flex-direction: column; }
   .perf-side { border-left: 1px solid var(--border); padding: 16px var(--pad); min-width: 0; display: flex; flex-direction: column; gap: 12px; }
   .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
   .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
   .lead-s { font-size: 13px; color: var(--muted); }
   .lead-s .n { color: var(--text); font-weight: 500; }
-  .chart { position: relative; margin-top: 12px; height: 300px; }
+  .chart { position: relative; margin-top: 12px; flex: 1 1 auto; min-height: 300px; }
   .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .chart.short { flex: none; height: 200px; min-height: 0; }
   .chart-empty { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-size: 13px; color: var(--muted); }
   .tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); padding: 8px 10px; font-size: 12px; min-width: 150px; }
   .tip .d { color: var(--muted); margin-bottom: 4px; }
@@ -149,6 +150,7 @@
   @media (pointer: coarse) { :root { --hit: 44px; } }
   @media (max-width: 980px) {
     .perf { grid-template-columns: 1fr; }
+    .chart { flex: none; height: 300px; min-height: 0; }
     .perf-side { border-left: 0; border-top: 1px solid var(--border); }
     .two-col { grid-template-columns: 1fr; }
     .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -166,6 +168,7 @@
     .fresh { font-size: 12px; gap: 8px; }
     .fresh .btn { padding: 0 12px; }
     .chart { height: 220px; }
+    .chart.short { height: 200px; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi:nth-child(n) { border-left: 0; border-top: 0; }
     .kpi:nth-child(even) { border-left: 1px solid var(--border); }
@@ -487,7 +490,7 @@
     const empty = $('chart-empty');
     if (!M.dates.length) { empty.hidden = false; empty.textContent = '還沒有出場紀錄，第一趟出場後會畫出走勢。'; return; }
     empty.hidden = true;
-    box.style.height = M.dates.length < 3 ? '200px' : '';
+    box.classList.toggle('short', M.dates.length < 3);
     const css = getComputedStyle(document.documentElement);
     const col = (n) => css.getPropertyValue(n).trim();
     const W = Math.max(280, box.clientWidth), H = box.clientHeight || 300;
