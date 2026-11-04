@@ -119,7 +119,7 @@ bad = data / "trips/2026/trips_20261105.csv"
 write(bad, TRIP_H, [["", "2026-11-05", S1] + [""] * 18])
 before = dump()["_trips"]
 code, out = run()
-check("有一筆缺 trip_id 時整批不寫、結束代碼 1", code == 1 and dump()["_trips"] == before, out)
+check("有一筆缺 trip_id 時整批不寫、結束代碼 1，而且說出是哪個檔第幾行", code == 1 and dump()["_trips"] == before and "trips_20261105.csv 第 2 行缺 trip_id" in out, out)
 bad.unlink()
 
 # 8. daily_pnl 比持倉檔新、但 open_positions 不是 0（例如持倉檔沒寫出來）：不能清掉持倉
@@ -141,6 +141,61 @@ check("新的持倉寫進去", code == 0 and [r[0] for r in dump()["_positions"]
 write(data / "positions/2026/positions_20261110.csv", POS_H, [])
 code, out = run()
 check("持倉檔只有標題列時，持倉清空", code == 0 and dump()["_positions"] == [], out)
+
+# 11. 資料超過分頁列數（假試算表每頁 30 列）：要自己加列，呈現頁也跟著加
+rows = []
+for i in range(45):
+    rows.append(trip(S1, "2330", "台積電", "2026-11-11", f"09:{i:02d}:05", f"10:{i:02d}:07", 1000, 990, 0.009, 9000))
+write(data / "trips/2026/trips_20261111.csv", TRIP_H, rows)
+code, out = run()
+d = dump()
+with urllib.request.urlopen(BASE + "/rows") as r:
+    maxrows = json.loads(r.read().decode("utf-8"))
+check("trips 超過分頁列數也同步成功", code == 0 and len(d["_trips"]) >= 45, out)
+check("交易明細頁的列數跟著加（不會讓陣列公式出錯）", maxrows["交易明細"] >= len(d["_trips"]) + 2, maxrows)
+check("同步紀錄用 appendRow，超過列數也照寫", len(d["_sync_log"]) >= 8, len(d["_sync_log"]))
+
+# 12. 時間格式：上午/下午可以讀；「日期 時間」整串不行（以前會被讀成 20:26:00）
+write(data / "trips/2026/trips_20261112.csv", TRIP_H, [trip(S1, "2603", "長榮", "2026-11-12", "上午 9:08:03", "下午 1:05:00", 200, 198, 0.01, 2000)])
+code, out = run()
+r12 = [r for r in dump()["_trips"] if r[1] == "2026-11-12"]
+check("上午/下午的時間讀成 09:08:03、13:05:00", code == 0 and r12 and r12[0][9] == "09:08:03" and r12[0][11] == "13:05:00", r12 or out)
+write(data / "trips/2026/trips_20261112.csv", TRIP_H, [trip(S1, "2603", "長榮", "2026-11-12", "2026-11-12 09:08:03", "10:00:00", 200, 198, 0.01, 2000)])
+code, out = run()
+check("「日期 時間」整串放在時間欄會被擋下，不會悄悄讀錯", code == 1 and "時間看不懂" in out and "試了" not in out, out)
+write(data / "trips/2026/trips_20261112.csv", TRIP_H, [trip(S1, "2603", "長榮", "2026-11-12", "09:08:03", "10:00:00", 200, 198, 0.01, 2000)])
+
+# 13. 連續失敗超過 5 天：下次成功時從上次成功那天起全部補送
+code, out = run()
+check("先成功一次，記下最後成功日期", code == 0 and json.loads((WORK / "sheet_sync_state.json").read_text(encoding="utf-8"))["last_ok_date"] == "2026-11-12", out)
+new_days = ["2026-11-13", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]
+for i, day in enumerate(new_days):
+    write(data / f"trips/2026/trips_{day.replace('-', '')}.csv", TRIP_H, [trip(S1, "2317", "鴻海", day, "09:30:00", "09:40:00", 200, 199, 0.005, 1000 + i)])
+    code, out = run(config=WORK / "bad.json")  # 密碼錯 = 那天同步失敗
+code, out = run()
+got = {r[1] for r in dump()["_trips"]}
+check("失敗 6 天後再成功，6 天全部補上（不只最近 5 天）", code == 0 and all(day in got for day in new_days) and "起補送" in out, [sorted(got)[-7:], out])
+
+# 14. 讀檔、設定檔出錯都要寫進 log（排程時看不到畫面）
+cp = data / "trips/2026/trips_20261123.csv"
+cp.write_bytes(("trip_id,exit_date,strategy\n" + f"{S1}|2330|20261123T0900,2026-11-23,{S1}\n").encode("cp950"))
+code, out = run()
+log_text = (WORK / "sync.log").read_text(encoding="utf-8")
+check("CSV 不是 UTF-8 時結束代碼 1，log 寫出檔名", code == 1 and "trips_20261123.csv 不是 UTF-8" in log_text, out)
+cp.unlink()
+(WORK / "broken.json").write_text('{"url": "x", token}', encoding="utf-8")
+code, out = run(config=WORK / "broken.json")
+log_text = (WORK / "sync.log").read_text(encoding="utf-8")
+check("設定檔 JSON 寫錯時結束代碼 2，log 有寫", code == 2 and "broken.json 寫錯了" in log_text, out)
+
+# 15. --full 防呆：資料夾不完整（只剩 1 個檔）時不准把試算表蓋掉
+small = WORK / "small"
+write(small / "trips/2026/trips_20261120.csv", TRIP_H, [trip(S1, "2317", "鴻海", "2026-11-20", "09:30:00", "09:40:00", 200, 199, 0.005, 1)])
+before = dump()["_trips"]
+p = subprocess.run([sys.executable, "-I", str(SCRIPT), "--data-dir", str(small), "--log", str(WORK / "sync.log"), "--config", str(WORK / "sheet_sync.json"), "--full"], capture_output=True, text=True, encoding="utf-8")
+check("--full 筆數少一半以上時被擋下，試算表不變", p.returncode == 1 and "--force" in p.stdout + p.stderr and dump()["_trips"] == before, p.stdout + p.stderr)
+p = subprocess.run([sys.executable, "-I", str(SCRIPT), "--data-dir", str(small), "--log", str(WORK / "sync.log"), "--config", str(WORK / "sheet_sync.json"), "--full", "--force"], capture_output=True, text=True, encoding="utf-8")
+check("加 --force 才照樣覆蓋", p.returncode == 0 and len(dump()["_trips"]) == 1, p.stdout + p.stderr)
 
 print()
 print("全部通過" if not fails else f"{len(fails)} 項沒過：{fails}")

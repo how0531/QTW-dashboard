@@ -956,6 +956,23 @@
   // 手機：手指放開後提示留著，點圖以外的地方才收起來
   document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart')) hiders.forEach((h) => h()); }, { passive: true });
 
+  // 電腦每個交易日 14:00 推送。從今天往回數：有幾個平日已經過了 15:00，但那天之後都沒有推送。
+  // 一律用台北時間算（台灣沒有夏令時間，直接加 8 小時），在國外打開也一樣。
+  // 少一天不算（可能是休市），連續兩個平日沒推送才提醒；週末不算，所以週一早上不會誤報。
+  const TPE = 8 * 3600e3;
+  const missedPushes = (pushT) => {
+    const nowT = Date.now() + TPE;
+    const today = Math.floor(nowT / 864e5) * 864e5;
+    let missed = 0;
+    for (let k = 0; k < 21; k++) {
+      const day = today - k * 864e5, wd = new Date(day).getUTCDay();
+      if (wd === 0 || wd === 6 || day + 15 * 3600e3 > nowT) continue;
+      if (pushT >= day) break;
+      missed++;
+    }
+    return missed;
+  };
+
   let busy = false, lastOk = null;
   const refresh = async () => {
     if (busy) return; busy = true;
@@ -971,10 +988,9 @@
       const pushed = (D.sync || []).map((r) => /(\d{4})\D(\d{1,2})\D(\d{1,2})\D+(\d{1,2}):(\d{2})/.exec(String(r['同步時間'] || ''))).filter(Boolean).pop();
       const lb = $('loaded');
       if (pushed) {
-        const when = new Date(+pushed[1], pushed[2] - 1, +pushed[3], +pushed[4], +pushed[5]);
+        const pushT = Date.UTC(+pushed[1], pushed[2] - 1, +pushed[3], +pushed[4], +pushed[5]);  // 試算表寫的是台北時間
         lb.textContent = '電腦 ' + (+pushed[2]) + '/' + (+pushed[3]) + ' ' + pushed[4].padStart(2, '0') + ':' + pushed[5] + ' 推送';
-        // 超過 2 天沒推送（跨週末也夠用）就提醒
-        lb.classList.toggle('stale', Date.now() - when.getTime() > 2.5 * 864e5);
+        lb.classList.toggle('stale', missedPushes(pushT) >= 2);
         if (lb.classList.contains('stale')) lb.textContent += '・很久沒更新';
       } else { lb.textContent = hhmm + ' 讀取'; lb.classList.remove('stale'); }
       lb.title = '網頁 ' + hhmm + ' 讀取試算表';

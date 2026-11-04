@@ -10,9 +10,11 @@
  * 安裝：見 sync/README.md。第一次要先執行 setup() 產生密碼（SYNC_TOKEN）。
  */
 
-var VERSION = '2026-11-03';
+var VERSION = '2026-11-04';
 
 var TABS = { trips: '_trips', positions: '_positions', daily: '_daily', log: '_sync_log' };
+// 用公式整欄展開的呈現頁：列數不夠時陣列公式會出錯，所以跟著原始資料一起加列。值是標題佔掉的列數
+var VIEWS = { trips: { '交易明細': 1 }, daily: { '每日': 3 } };
 
 var COLS = {
   trips: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'shares', 'entry_date', 'entry_time',
@@ -85,9 +87,17 @@ function applySync_(ss, body) {
   });
   if (!sets.trips && !sets.positions && !sets.daily) throw new Error('沒有資料');
 
+  // 全量覆蓋的防呆：新資料比試算表現有的少一半以上（例如電腦資料夾不完整），先不寫，除非明確帶 force
+  if (mode === 'replace' && sets.trips && !body.force) {
+    var have = readTable_(sheet_(ss, 'trips'), 'trips', true).length;
+    if ((sets.trips.length === 0 && have > 0) || (have >= 20 && sets.trips.length < have / 2)) {
+      throw new Error('全量覆蓋會讓 trips 從 ' + have + ' 筆變成 ' + sets.trips.length + ' 筆，先不寫入。確定沒問題再加 --force 重跑');
+    }
+  }
+
   if (sets.trips) res.trips = writeTrips_(ss, sets.trips, mode);
   if (sets.positions) res.positions = writePositions_(ss, sets.positions, mode, body.positions_as_of);
-  if (sets.daily) res.daily = writeTable_(sheet_(ss, 'daily'), 'daily', sets.daily);
+  if (sets.daily) { res.daily = writeTable_(sheet_(ss, 'daily'), 'daily', sets.daily); growViews_(ss, 'daily', sets.daily.length); }
 
   var allCum = '';
   if (sets.daily) {
@@ -98,8 +108,9 @@ function applySync_(ss, body) {
   var log = ss.getSheetByName(TABS.log);
   if (log) {
     var dataDate = body.data_date || '';
-    log.getRange(log.getLastRow() + 1, 1, 1, 8).setValues([[now, dataDate, (body.source || 'sheet_sync.py') + (mode === 'replace' ? '（全量）' : ''),
-      res.trips ? res.trips.added : '', res.trips ? res.trips.total : '', res.positions ? res.positions.written : '', allCum, body.note || '']]);
+    // appendRow 會自己加列，不會撞到分頁列數上限
+    log.appendRow([now, dataDate, (body.source || 'sheet_sync.py') + (mode === 'replace' ? '（全量）' : ''),
+      res.trips ? res.trips.added : '', res.trips ? res.trips.total : '', res.positions ? res.positions.written : '', allCum, body.note || '']);
   }
   return res;
 }
@@ -119,9 +130,15 @@ function normalize_(kind, r, i, now) {
       if (!m) throw new Error(kind + ' 第 ' + (i + 1) + ' 筆 ' + c + ' 日期看不懂：' + v);
       v = m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
     } else if (TIME[kind].indexOf(c) >= 0 && v !== '') {
-      var t = /^(\d{1,2}):?(\d{2}):?(\d{2})?/.exec(String(v));
-      if (!t) throw new Error(kind + ' 第 ' + (i + 1) + ' 筆 ' + c + ' 時間看不懂：' + v);
-      v = ('0' + t[1]).slice(-2) + ':' + t[2] + ':' + (t[3] || '00');
+      // 接受 9:08、09:08:03、090803、上午 9:08:03；整串都要是時間，不能是「2026-11-03 09:08」這種
+      var ts = String(v).trim(), pm = /下午|PM/i.test(ts), am = /上午|AM/i.test(ts);
+      ts = ts.replace(/上午|下午|AM|PM/ig, '').trim();
+      var t = /^(\d{1,2}):?(\d{2})(?::?(\d{2}))?$/.exec(ts);
+      var hh = t ? Number(t[1]) : NaN;
+      if (t && pm && hh < 12) hh += 12;
+      if (t && am && hh === 12) hh = 0;
+      if (!t || hh > 23 || Number(t[2]) > 59 || Number(t[3] || 0) > 59) throw new Error(kind + ' 第 ' + (i + 1) + ' 筆 ' + c + ' 時間看不懂：' + v);
+      v = ('0' + hh).slice(-2) + ':' + t[2] + ':' + (t[3] || '00');
     } else if (TEXT[kind].indexOf(c) < 0 && c !== 'synced_at' && v !== '') {
       var n = Number(String(v).replace(/,/g, ''));
       if (isNaN(n)) throw new Error(kind + ' 第 ' + (i + 1) + ' 筆 ' + c + ' 不是數字：' + v);
@@ -149,6 +166,7 @@ function writeTrips_(ss, rows, mode) {
     return ka < kb ? -1 : ka > kb ? 1 : 0;
   });
   writeTable_(sh, 'trips', existing);
+  growViews_(ss, 'trips', existing.length);
   return { added: added, updated: updated, total: existing.length };
 }
 
@@ -181,12 +199,14 @@ function sheet_(ss, kind) {
   return sh;
 }
 
-function readTable_(sh, kind) {
+function readTable_(sh, kind, countOnly) {
   var n = sh.getLastRow() - 1;
   if (n < 1) return [];
   // 日期和時間讀「畫面上顯示的字」，不讀 Date 物件，才不會因為時區換算差幾分鐘
   var range = sh.getRange(2, 1, n, COLS[kind].length);
-  var values = range.getValues(), shown = range.getDisplayValues();
+  var values = range.getValues();
+  if (countOnly) return values.filter(function (row) { return row.some(function (v) { return v !== '' && v != null; }); });
+  var shown = range.getDisplayValues();
   var out = [];
   values.forEach(function (row, ri) {
     if (!row.some(function (v) { return v !== '' && v != null; })) return;
@@ -202,11 +222,26 @@ function readTable_(sh, kind) {
   return out;
 }
 
+// 分頁列數不夠就先加列（新試算表每頁只有 1000 列，超過時 getRange 會直接出錯）
+function ensureRows_(sh, need) {
+  var max = sh.getMaxRows();
+  if (max < need) sh.insertRowsAfter(max, need - max + 500);
+}
+
+function growViews_(ss, kind, n) {
+  var views = VIEWS[kind] || {};
+  Object.keys(views).forEach(function (name) {
+    var sh = ss.getSheetByName(name);
+    if (sh) ensureRows_(sh, views[name] + n + 1);
+  });
+}
+
 function writeTable_(sh, kind, rows) {
   var cols = COLS[kind];
   var last = sh.getLastRow();
   if (last > 1) sh.getRange(2, 1, last - 1, cols.length).clearContent();
   if (!rows.length) return { written: 0 };
+  ensureRows_(sh, rows.length + 1);
   var range = sh.getRange(2, 1, rows.length, cols.length);
   // 文字欄先設成純文字，日期、時間給固定格式，其他照試算表原本的格式
   cols.forEach(function (c, i) {

@@ -12,15 +12,23 @@ const COLS = {
   _daily: 'date,strategy,trips,wins,entry_amount,realized_pnl,realized_pct,unrealized_pnl,open_positions,cum_realized_pnl,day_pct,cum_pct,gross_wins,gross_losses'.split(','),
   _sync_log: '同步時間,資料日期,方式,trips 新增,trips 總數,positions 筆數,ALL cum_pct,備註'.split(','),
 };
-// 假試算表：值存成「像 Sheets 會顯示的樣子」，日期時間依格式轉字串，數字照存
-function makeSheet(name) {
-  const grid = [COLS[name].slice()];
+// 假試算表：值存成「像 Sheets 會顯示的樣子」，日期時間依格式轉字串，數字照存。
+// 和真的一樣有列數上限（新分頁 1000 列 × 26 欄），範圍超出就丟錯
+const MAX_ROWS = Number(process.env.FAKE_MAX_ROWS || 1000);
+function makeSheet(name, header) {
+  const grid = [(header || COLS[name]).slice()];
   const fmt = {};
+  let maxRows = MAX_ROWS;
   const sh = {
     name, grid, fmt,
     getLastRow: () => { for (let r = grid.length; r > 0; r--) if (grid[r - 1].some((v) => v !== '' && v != null)) return r; return 0; },
+    getMaxRows: () => maxRows,
+    insertRowsAfter: (after, n) => { if (after > maxRows) throw new Error('insertRowsAfter 超出範圍'); maxRows += n; },
+    appendRow: (row) => { const r = sh.getLastRow() + 1; if (r > maxRows) maxRows = r; grid[r - 1] = row.slice(); },
     getParent: () => SS,
-    getRange: (r, c, nr = 1, nc = 1) => ({
+    getRange: (r, c, nr = 1, nc = 1) => {
+      if (r < 1 || c < 1 || r - 1 + nr > maxRows || c - 1 + nc > 26) throw new Error(`範圍座標超出工作表大小（${name} 第 ${r}～${r + nr - 1} 列，上限 ${maxRows}）`);
+      return {
       getValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => ((grid[r - 1 + i] || [])[c - 1 + j] ?? ''))),
       getDisplayValues: () => Array.from({ length: nr }, (_, i) => Array.from({ length: nc }, (_, j) => String((grid[r - 1 + i] || [])[c - 1 + j] ?? ''))),
       setValues: (vals) => {
@@ -33,11 +41,15 @@ function makeSheet(name) {
       },
       clearContent: () => { for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) if (grid[r - 1 + i]) grid[r - 1 + i][c - 1 + j] = ''; },
       setNumberFormat: (f) => { for (let j = 0; j < nc; j++) fmt[c + j] = f; },
-    }),
+      };
+    },
   };
   return sh;
 }
 const sheets = Object.fromEntries(Object.keys(COLS).map((n) => [n, makeSheet(n)]));
+// 用公式展開的呈現頁，只檢查列數有沒有跟著加
+sheets['交易明細'] = makeSheet('交易明細', ['出場日']);
+sheets['每日'] = makeSheet('每日', ['策略']);
 const SS = { getSheetByName: (n) => sheets[n] || null, getSpreadsheetTimeZone: () => 'Asia/Taipei' };
 const props = { SYNC_TOKEN: process.argv[3] };
 const ctx = {
@@ -67,7 +79,8 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (req.method === 'GET' && u.pathname === '/echo') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(pending.get(u.searchParams.get('id')) || '{}'); return; }
-  if (req.method === 'GET' && u.pathname === '/dump') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(Object.fromEntries(Object.entries(sheets).map(([k, s]) => [k, s.grid])))); return; }
+  if (req.method === 'GET' && u.pathname === '/dump') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(Object.fromEntries(Object.entries(sheets).filter(([k]) => k.startsWith('_')).map(([k, s]) => [k, s.grid])))); return; }
+  if (req.method === 'GET' && u.pathname === '/rows') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(Object.fromEntries(Object.entries(sheets).map(([k, s]) => [k, s.getMaxRows()])))); return; }
   if (req.method === 'POST' && u.pathname === '/seed') {
     let body = ''; req.on('data', (c) => (body += c));
     req.on('end', () => { const d = JSON.parse(body); Object.entries(d).forEach(([k, rows]) => rows.forEach((r) => sheets[k].grid.push(r))); res.end('ok'); });
