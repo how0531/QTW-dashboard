@@ -334,13 +334,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 (() => {
+  // 讀試算表的兩種方式：
+  //   PUB_ID 有填 → 讀「檔案 → 共用 → 發布到網路」發布的分頁（試算表本身不用公開，只公開這幾頁）
+  //   PUB_ID 空白 → 用 gviz 讀，試算表要開「知道連結的任何人 → 檢視者」
+  // 只讀原始分頁（電腦同步寫入的值和策略對照），所有統計都在這裡算；總覽那些公式頁可以隨意改，不影響網頁。
   const SHEET_ID = '1ZF5fgJgwMrs5sfUYWTpfX0HI9zoZlQL9WxcU4QeZL7U';
+  const PUB_ID = '';
   const SRC = {
-    kpi: { sheet: '總覽', range: 'A4:G5', text: ['與電腦資料核對'] },
-    strategies: { sheet: '總覽', range: 'A8:N', text: ['策略', '狀態', '最近出場日', '分類'] },
-    trips: { sheet: '_trips', range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
-    positions: { sheet: '_positions', range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
-    sync: { sheet: '_sync_log', range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
+    strategies: { sheet: '策略對照', gid: 4, range: 'A1:E', text: ['策略', '狀態', '上線日', '備註', '分類'] },
+    trips: { sheet: '_trips', gid: 5, range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
+    positions: { sheet: '_positions', gid: 6, range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
+    sync: { sheet: '_sync_log', gid: 8, range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
   };
 
   // 分類：試算表有「分類」欄就用它，沒有就從策略名稱判斷。順序就是畫面上的排列順序。
@@ -363,7 +367,9 @@
   // 簡稱：去掉分類字和停損參數那段；撞名就用全名
   const shortOf = (name) => name.replace(/^沖空_/, '').replace(/_沖空$/, '').replace(/_隔日沖$/, '').split('_').filter((p) => !/損/.test(p)).join('_') || name;
 
-  const url = (s) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(s.sheet)}&range=${s.range}&t=${Date.now()}`;
+  const url = (s) => (PUB_ID
+    ? `https://docs.google.com/spreadsheets/d/e/${PUB_ID}/pub?gid=${s.gid}&single=true&output=csv&t=${Date.now()}`
+    : `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(s.sheet)}&range=${s.range}&t=${Date.now()}`);
   const toNum = (s) => {
     if (s == null) return null;
     const t = String(s).trim().replace(/,/g, '').replace(/−/g, '-');
@@ -417,24 +423,42 @@
 
   // ---- 把資料整理成畫面要的樣子 ----
   const build = () => {
-    const rows = D.strategies.filter((r) => r['策略']);
+    // 策略清單＝策略對照（照列的順序）＋還沒登錄但有交易或持倉的（標「未登錄」），新策略會自動出現
+    const rows = D.strategies.filter((r) => r['策略']).map((r, i) => ({ ...r, '策略': String(r['策略']).trim(), order: i }));
     const names = new Set(rows.map((r) => r['策略']));
-    D.trips.forEach((t) => { if (t.strategy && !names.has(t.strategy)) { names.add(t.strategy); rows.push({ '策略': t.strategy, '狀態': '未登錄' }); } });
+    [...D.trips, ...D.positions].forEach((t) => { if (t.strategy && !names.has(t.strategy)) { names.add(t.strategy); rows.push({ '策略': t.strategy, '狀態': '未登錄', order: 1e6 + rows.length }); } });
     const shorts = new Map();
     rows.forEach((r) => { const s = shortOf(r['策略']); shorts.set(s, (shorts.get(s) || 0) + 1); });
+    const trips = D.trips.map((t) => ({ ...t, d: F.iso(t.exit_date) })).filter((t) => t.d && t.strategy);
+    const lastPosDate = d3.max(D.positions, (p) => F.iso(p.date)) || '';
+    const positions = D.positions.filter((p) => F.iso(p.date) === lastPosDate);
+    // 勝負只看價差（gross_pnl），不扣手續費
+    const tBy = d3.group(trips, (t) => t.strategy), pBy = d3.group(positions, (p) => p.strategy);
     const strat = rows.map((r) => {
-      const name = r['策略'];
-      const s = shortOf(name);
-      return { name, short: shorts.get(s) > 1 ? name : s, cat: catOf(name, r['分類']), status: r['狀態'], n: r['趟數'] || 0, w: r['勝'] || 0, l: r['負'] || 0, t: r['平'] || 0, ret: r['累積報酬率'] || 0, pnl: r['淨損益'] || 0, avg: r['平均每趟'], pos: r['持倉檔數'] || 0, unr: r['未實現'] || 0, last: r['最近出場日'] };
+      const name = r['策略'], s = shortOf(name), ts = tBy.get(name) || [], ps = pBy.get(name) || [];
+      const n = ts.length, ret = d3.sum(ts, (t) => t.return_pct || 0);
+      return {
+        name, short: shorts.get(s) > 1 ? name : s, cat: catOf(name, r['分類']), status: r['狀態'] || '', order: r.order,
+        n, w: ts.filter((t) => (t.gross_pnl || 0) > 0).length, l: ts.filter((t) => (t.gross_pnl || 0) < 0).length,
+        t: ts.filter((t) => !t.gross_pnl).length, ret, pnl: d3.sum(ts, (t) => t.net_pnl || 0), avg: n ? ret / n : null,
+        pos: ps.length, unr: d3.sum(ps, (p) => p.unrealized_pnl || 0), last: d3.max(ts, (t) => t.d) || '',
+      };
     });
-    // 線條樣式依分類內的名稱順序固定分配，每天打開顏色都一樣
+    // 線條樣式依策略對照裡的列順序分配：新策略加在最下面，其他策略的顏色不會跟著變
     const theme = dark.matches ? 'dark' : 'light';
     CATS.concat([...new Set(strat.map((s) => s.cat))].filter((c) => !CATS.includes(c))).forEach((c) => {
       const pal = HUES[theme][c] || HUES[theme]['其他'];
-      strat.filter((s) => s.cat === c).sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i + Math.floor(i / pal.length)) % DASH.length]; });
+      strat.filter((s) => s.cat === c).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i + Math.floor(i / pal.length)) % DASH.length]; });
     });
-    // 每趟報酬依出場日累加，總績效是全部策略加總（和總覽的累積報酬率同一個算法）
-    const trips = D.trips.map((t) => ({ ...t, d: F.iso(t.exit_date) })).filter((t) => t.d);
+    // 總數字：和電腦資料核對＝全部每趟報酬加總 vs 最近一次同步時 daily_pnl 的 ALL cum_pct
+    const n = trips.length, ret = d3.sum(trips, (t) => t.return_pct || 0);
+    const cum = (D.sync || []).map((r) => r['ALL cum_pct']).filter((v) => v != null).pop();
+    const kpi = {
+      ret, pnl: d3.sum(trips, (t) => t.net_pnl || 0), n, win: n ? trips.filter((t) => (t.gross_pnl || 0) > 0).length / n : null,
+      pos: positions.length, unr: d3.sum(positions, (p) => p.unrealized_pnl || 0),
+      check: cum == null ? '待同步' : Math.abs(ret - cum) <= 0.00005 * Math.max(1, n) + 1e-7 ? '一致' : '不一致',
+    };
+    // 每趟報酬依出場日累加，總績效是全部策略加總
     const dates = [...new Set(trips.map((t) => t.d))].sort();
     const byDay = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.strategy, (t) => t.d);
     const series = new Map();
@@ -447,9 +471,7 @@
     let c = 0;
     const dayTot = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.d);
     const total = dates.map((d) => (c += dayTot.get(d) || 0));
-    const lastPosDate = d3.max(D.positions, (p) => F.iso(p.date)) || '';
-    const positions = D.positions.filter((p) => F.iso(p.date) === lastPosDate);
-    M = { strat, dates, series, total, positions, lastPosDate, trips };
+    M = { strat, dates, series, total, positions, lastPosDate, trips, kpi };
     applyDefaults();
   };
 
@@ -491,28 +513,28 @@
   };
 
   const renderLead = () => {
-    const k = D.kpi[0] || {};
-    const v = $('lead-v'); v.textContent = F.pct(k['累積報酬率']); v.className = 'lead-v ' + F.tone(k['累積報酬率']);
+    const k = M.kpi;
+    const v = $('lead-v'); v.textContent = F.pct(k.ret); v.className = 'lead-v ' + F.tone(k.ret);
     const s = $('lead-s'); s.replaceChildren();
     const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
-    add('已實現，'); add(F.int(k['總趟數']), 'n'); add(' 趟');
+    add('已實現，'); add(F.int(k.n), 'n'); add(' 趟');
     if (M.dates.length) { add('・' + F.day(M.dates[0]) + ' 到 ' + F.day(M.dates[M.dates.length - 1])); }
   };
 
   const renderKpis = () => {
-    const k = D.kpi[0] || {};
+    const k = M.kpi;
     const set = (id, text, tone, unit) => { const e = $(id); e.replaceChildren(document.createTextNode(text)); e.className = 'kpi-v ' + (tone || ''); if (unit) e.appendChild(el('small', null, unit)); };
-    set('k-pnl', F.money(k['累積淨損益']), F.tone(k['累積淨損益']), '元');
-    const n = k['總趟數'] || 0;
+    set('k-pnl', F.money(k.pnl), F.tone(k.pnl), '元');
+    const n = k.n;
     const W = d3.sum(M.strat, (s) => s.w), L = d3.sum(M.strat, (s) => s.l), T = d3.sum(M.strat, (s) => s.t);
-    set('k-win', n ? F.rate(k['勝率']) : '—');
+    set('k-win', n ? F.rate(k.win) : '—');
     $('k-wl').textContent = n ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '還沒有出場';
-    set('k-pos', F.int(k['持倉檔數']), '', '檔');
+    set('k-pos', F.int(k.pos), '', '檔');
     $('k-pos-s').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤' : '';
-    set('k-unr', F.money(k['未實現損益']), F.tone(k['未實現損益']), '元');
+    set('k-unr', F.money(k.unr), F.tone(k.unr), '元');
     const cost = d3.sum(M.positions, (p) => (p.avg_cost || 0) * (p.shares || 0));
-    $('k-unr-s').textContent = cost ? '佔持倉成本 ' + F.pct((k['未實現損益'] || 0) / cost) : '';
-    const chk = $('k-check'); const s = k['與電腦資料核對'] || '—';
+    $('k-unr-s').textContent = cost ? '佔持倉成本 ' + F.pct(k.unr / cost) : '';
+    const chk = $('k-check'); const s = k.check;
     chk.textContent = s; chk.className = 'pill' + (s === '一致' ? ' ok' : s === '不一致' ? ' bad' : '');
   };
 
