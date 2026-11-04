@@ -89,6 +89,17 @@ check("持倉兩天共 3 筆都在（全量）", len(d["_positions"]) == 3, d["_
 check("daily 2 列", len(d["_daily"]) == 2)
 check("同步紀錄寫了一列", len(d["_sync_log"]) == 1 and d["_sync_log"][0][1] == "2026-11-03", d["_sync_log"])
 
+# 4b. 網頁用 GET 讀資料：只有 4 個分頁，代號保留 0，數字是數字，沒有密碼
+seed = urllib.request.Request(BASE + "/seed", data=json.dumps({"策略對照": [[S1, "啟用", "", "", "當沖做空"]]}).encode(), method="POST")
+urllib.request.urlopen(seed).read()
+with urllib.request.urlopen(BASE + "/exec") as r:
+    web = json.loads(r.read().decode("utf-8"))
+check("GET 只回傳網頁要的 4 個分頁", web.get("ok") and set(web) == {"ok", "service", "version", "strategies", "trips", "positions", "sync"}, sorted(web))
+check("GET 的 trips 第一列是欄名、共 3 趟", web["trips"][0][:3] == ["trip_id", "exit_date", "strategy"] and len(web["trips"]) == 4, web["trips"][:2])
+check("GET 的代號 00878 還是文字、報酬是數字", any(r[4] == "00878" for r in web["trips"][1:]) and all(isinstance(r[20], (int, float)) for r in web["trips"][1:]), [r[4] for r in web["trips"][1:]])
+check("GET 回應裡沒有密碼", TOKEN not in json.dumps(web, ensure_ascii=False))
+check("GET 讀得到策略對照的分類", web["strategies"][1][4] == "當沖做空", web["strategies"])
+
 # 5. 隔天：每日同步（新增一趟、改一趟、持倉換新）
 write(data / "trips/2026/trips_20261104.csv", TRIP_H, [trip(S1, "3017", "奇鋐", "2026-11-04", "09:30:00", "09:45:00", 512, 500, 0.0234, 9000)])
 rows = list(csv.reader(open(data / "trips/2026/trips_20261103.csv", encoding="utf-8")))

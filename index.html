@@ -223,7 +223,7 @@
 </header>
 
 <main class="page">
-  <p class="alert" id="err" hidden><b>讀不到試算表</b><span id="err-msg">請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。</span><button class="link" id="retry" type="button">再試一次</button></p>
+  <p class="alert" id="err" hidden><b>讀不到試算表</b><span id="err-msg">等一下再試，或重新整理。</span><button class="link" id="retry" type="button">再試一次</button></p>
 
   <div class="view" id="home">
   <div class="title">
@@ -334,17 +334,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 (() => {
-  // 讀試算表的兩種方式：
-  //   PUB_ID 有填 → 讀「檔案 → 共用 → 發布到網路」發布的分頁（試算表本身不用公開，只公開這幾頁）
-  //   PUB_ID 空白 → 用 gviz 讀，試算表要開「知道連結的任何人 → 檢視者」
+  // 讀資料的兩種方式：
+  //   API_URL 有填 → 向試算表的 Apps Script（sync/Code.gs 部署成的網頁應用程式，網址結尾 /exec）拿，
+  //                  它只回傳下面 4 個分頁，試算表本身維持「限制」不公開
+  //   API_URL 空白 → 用 gviz 直接讀，試算表要開「知道連結的任何人 → 檢視者」
   // 只讀原始分頁（電腦同步寫入的值和策略對照），所有統計都在這裡算；總覽那些公式頁可以隨意改，不影響網頁。
+  const API_URL = '';
   const SHEET_ID = '1ZF5fgJgwMrs5sfUYWTpfX0HI9zoZlQL9WxcU4QeZL7U';
-  const PUB_ID = '';
   const SRC = {
-    strategies: { sheet: '策略對照', gid: 4, range: 'A1:E', text: ['策略', '狀態', '上線日', '備註', '分類'] },
-    trips: { sheet: '_trips', gid: 5, range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
-    positions: { sheet: '_positions', gid: 6, range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
-    sync: { sheet: '_sync_log', gid: 8, range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
+    strategies: { sheet: '策略對照', range: 'A1:E', text: ['策略', '狀態', '上線日', '備註', '分類'] },
+    trips: { sheet: '_trips', range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
+    positions: { sheet: '_positions', range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
+    sync: { sheet: '_sync_log', range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
   };
 
   // 分類：試算表有「分類」欄就用它，沒有就從策略名稱判斷。順序就是畫面上的排列順序。
@@ -367,9 +368,7 @@
   // 簡稱：去掉分類字和停損參數那段；撞名就用全名
   const shortOf = (name) => name.replace(/^沖空_/, '').replace(/_沖空$/, '').replace(/_隔日沖$/, '').split('_').filter((p) => !/損/.test(p)).join('_') || name;
 
-  const url = (s) => (PUB_ID
-    ? `https://docs.google.com/spreadsheets/d/e/${PUB_ID}/pub?gid=${s.gid}&single=true&output=csv&t=${Date.now()}`
-    : `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(s.sheet)}&range=${s.range}&t=${Date.now()}`);
+  const url = (s) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(s.sheet)}&range=${s.range}&t=${Date.now()}`;
   const toNum = (s) => {
     if (s == null) return null;
     const t = String(s).trim().replace(/,/g, '').replace(/−/g, '-');
@@ -378,21 +377,34 @@
     const n = Number(pct ? t.slice(0, -1) : t);
     return Number.isNaN(n) ? null : (pct ? n / 100 : n);
   };
+  // 一列欄名＋資料列 → 物件；文字欄保留字串（00878 不會掉 0），其他轉成數字
+  const toObjects = (s, head, rows) => rows.map((r) => {
+    const o = {};
+    head.forEach((h, i) => {
+      const c = String(h ?? '').trim();
+      if (!c) return;
+      const v = r[i] == null ? '' : r[i];
+      o[c] = s.text.includes(c) ? (v === '' ? null : String(v)) : toNum(v);
+    });
+    return o;
+  }).filter((o) => Object.values(o).some((v) => v != null));
   const load = async (key) => {
     const s = SRC[key];
     const res = await fetch(url(s), { cache: 'no-store' });
     if (!res.ok) throw new Error(key + ' ' + res.status);
     const body = await res.text();
     if (/^\s*</.test(body)) throw new Error(key + ' not shared');
-    return d3.csvParse(body).filter((r) => Object.values(r).some((v) => v !== '')).map((r) => {
-      const o = {};
-      for (const [k, v] of Object.entries(r)) {
-        const c = k.trim();
-        if (!c) continue;
-        o[c] = s.text.includes(c) ? (v === '' ? null : v) : toNum(v);
-      }
-      return o;
-    });
+    const rows = d3.csvParseRows(body);
+    return rows.length ? toObjects(s, rows[0], rows.slice(1)) : [];
+  };
+  // Apps Script 一次回傳 4 個分頁
+  const loadApi = async () => {
+    const res = await fetch(API_URL + (API_URL.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('api ' + res.status);
+    let j;
+    try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('api not public'); }
+    if (!j || !j.ok) throw new Error('api ' + ((j && j.error) || 'bad response'));
+    return Object.fromEntries(Object.keys(SRC).map((k) => { const t = j[k] || []; return [k, t.length ? toObjects(SRC[k], t[0], t.slice(1)) : []]; }));
   };
 
   const MINUS = '−';
@@ -1000,9 +1012,12 @@
     if (busy) return; busy = true;
     $('loaded').textContent = '讀取中…';
     try {
-      const keys = Object.keys(SRC);
-      const vals = await Promise.all(keys.map((k) => (SRC[k].optional ? load(k).catch(() => []) : load(k))));
-      D = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
+      if (API_URL) D = await loadApi();
+      else {
+        const keys = Object.keys(SRC);
+        const vals = await Promise.all(keys.map((k) => (SRC[k].optional ? load(k).catch(() => []) : load(k))));
+        D = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
+      }
       $('err').hidden = true;
       renderAll();
       lastOk = new Date();
@@ -1018,7 +1033,8 @@
       lb.title = '網頁 ' + hhmm + ' 讀取試算表';
     } catch (e) {
       $('err').hidden = false;
-      const why = /not shared/.test(e.message) ? '請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。'
+      const why = /api not public/.test(e.message) ? '資料來源沒有開放：Apps Script 部署的「誰可以存取」要選「所有人」。'
+        : /not shared/.test(e.message) ? '請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。'
         : /Failed to fetch|NetworkError|Load failed/i.test(e.message) ? '網路連不上 Google，等一下再試。'
         : '讀取「' + e.message.split(' ')[0] + '」時出錯（' + e.message + '）。';
       $('err-msg').textContent = lastOk

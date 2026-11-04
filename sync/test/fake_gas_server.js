@@ -23,6 +23,7 @@ function makeSheet(name, header) {
     name, grid, fmt,
     getLastRow: () => { for (let r = grid.length; r > 0; r--) if (grid[r - 1].some((v) => v !== '' && v != null)) return r; return 0; },
     getMaxRows: () => maxRows,
+    getLastColumn: () => Math.max(0, ...grid.map((r) => { for (let c = r.length; c > 0; c--) if (r[c - 1] !== '' && r[c - 1] != null) return c; return 0; })),
     insertRowsAfter: (after, n) => { if (after > maxRows) throw new Error('insertRowsAfter 超出範圍'); maxRows += n; },
     appendRow: (row) => { const r = sh.getLastRow() + 1; if (r > maxRows) maxRows = r; grid[r - 1] = row.slice(); },
     getParent: () => SS,
@@ -50,6 +51,8 @@ const sheets = Object.fromEntries(Object.keys(COLS).map((n) => [n, makeSheet(n)]
 // 用公式展開的呈現頁，只檢查列數有沒有跟著加
 sheets['交易明細'] = makeSheet('交易明細', ['出場日']);
 sheets['每日'] = makeSheet('每日', ['策略']);
+sheets['策略對照'] = makeSheet('策略對照', ['策略', '狀態', '上線日', '備註', '分類']);
+sheets['總覽'] = makeSheet('總覽', ['不該被網頁讀到']);
 const SS = { getSheetByName: (n) => sheets[n] || null, getSpreadsheetTimeZone: () => 'Asia/Taipei' };
 const props = { SYNC_TOKEN: process.argv[3] };
 const ctx = {
@@ -76,6 +79,13 @@ const server = http.createServer((req, res) => {
       pending.set(id, out.s);
       res.writeHead(302, { Location: `/echo?id=${id}` }); res.end();
     });
+    return;
+  }
+  if (req.method === 'GET' && u.pathname === '/exec') {
+    const out = ctx.doGet({ parameter: Object.fromEntries(u.searchParams) });
+    const id = crypto.randomUUID();
+    pending.set(id, out.s);
+    res.writeHead(302, { Location: `/echo?id=${id}` }); res.end();
     return;
   }
   if (req.method === 'GET' && u.pathname === '/echo') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(pending.get(u.searchParams.get('id')) || '{}'); return; }

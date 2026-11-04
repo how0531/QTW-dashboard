@@ -7,6 +7,8 @@
  *   - daily：daily_pnl.csv，每次整份覆蓋
  * 每次同步在 _sync_log 留一列紀錄。
  *
+ * 網頁（GitHub Pages）用 GET 向這裡拿資料：只回傳 WEB_TABS 這 4 個分頁，試算表本身不用公開。
+ *
  * 安裝：見 sync/README.md。第一次要先執行 setup() 產生密碼（SYNC_TOKEN）。
  */
 
@@ -15,6 +17,8 @@ var VERSION = '2026-11-04';
 var TABS = { trips: '_trips', positions: '_positions', daily: '_daily', log: '_sync_log' };
 // 用公式整欄展開的呈現頁：列數不夠時陣列公式會出錯，所以跟著原始資料一起加列。值是標題佔掉的列數
 var VIEWS = { trips: { '交易明細': 1 }, daily: { '每日': 3 } };
+// 網頁讀得到的分頁（公開）。其他分頁、公式、試算表擁有者都不會經過這裡
+var WEB_TABS = { strategies: '策略對照', trips: '_trips', positions: '_positions', sync: '_sync_log' };
 
 var COLS = {
   trips: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'shares', 'entry_date', 'entry_time',
@@ -48,8 +52,23 @@ function setup() {
   return t;
 }
 
+/** 網頁讀資料用：回傳 WEB_TABS 每頁的內容（第一列是欄名）。不用密碼，所以只放本來就要公開的分頁 */
 function doGet() {
-  return json_({ ok: true, service: 'qtw-sheet-sync', version: VERSION });
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var out = { ok: true, service: 'qtw-sheet-sync', version: VERSION };
+  Object.keys(WEB_TABS).forEach(function (k) { out[k] = webTable_(ss.getSheetByName(WEB_TABS[k])); });
+  return json_(out);
+}
+
+// 數字照原值給（不會被顯示格式四捨五入）；日期、時間給畫面上顯示的字（不會因為時區換算差幾分鐘）
+function webTable_(sh) {
+  if (!sh) return [];
+  var nr = sh.getLastRow(), nc = sh.getLastColumn();
+  if (nr < 1 || nc < 1) return [];
+  var range = sh.getRange(1, 1, nr, nc), values = range.getValues(), shown = range.getDisplayValues();
+  return values.map(function (row, i) {
+    return row.map(function (v, j) { return v instanceof Date ? shown[i][j] : v; });
+  }).filter(function (row, i) { return i === 0 || row.some(function (v) { return v !== '' && v != null; }); });
 }
 
 function doPost(e) {

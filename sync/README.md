@@ -7,14 +7,14 @@ XQ log ─► xq_daily_report.py（14:00）─► C:\XS\data\*.csv
                                          │  HTTPS POST＋密碼
                                          ▼
                 Google Apps Script（Code.gs，綁在「策略管理」試算表）
-                                         │  寫入 _trips / _positions / _daily / _sync_log
-                                         ▼
-               試算表公式算出 總覽 ─► 網頁 dashboard 每 5 分鐘讀一次
+                    │  寫入 _trips / _positions / _daily / _sync_log
+                    │
+                    └─ GET（不用密碼，只回傳 4 個分頁）◄─ 網頁 dashboard 每 5 分鐘讀一次
 ```
 
 ## 先知道
 
-網頁和這個 repo 都是公開的。試算表本身**不開連結共用**，只用「發布到網路」公開網頁需要的 4 個分頁（策略對照、_trips、_positions、_sync_log），所以**任何拿到網頁網址的人都看得到全部交易紀錄**，但看不到試算表的其他分頁、你的 Google 名稱，也不能建立副本。
+網頁和這個 repo 都是公開的。試算表本身**不公開**（共用維持「限制」），網頁是向同一個 Apps Script 拿資料，它只回傳網頁需要的 4 個分頁（策略對照、_trips、_positions、_sync_log）。所以**任何拿到網頁網址的人都看得到全部交易紀錄和策略對照的備註**，但看不到試算表的其他分頁、你的 Google 名稱，也不能建立副本。寫入一定要密碼。
 
 ## 一次性安裝
 
@@ -29,11 +29,8 @@ XQ log ─► xq_daily_report.py（14:00）─► C:\XS\data\*.csv
    - 誰可以存取：**所有人**（沒有密碼的請求會被擋掉）
    
    按「部署」，複製「網頁應用程式網址」（結尾是 `/exec`）。
-6. 試算表「檔案 → 共用 → 發布到網路」：
-   - 展開「已發布的內容和設定」，只勾 `策略對照`、`_trips`、`_positions`、`_sync_log` 四頁，勾「有變更時自動重新發布」，按「開始發布」。
-   - 上面「連結」那格的網址長這樣：`https://docs.google.com/spreadsheets/d/e/2PACX-…/pubhtml`，把 `/d/e/` 和 `/pubhtml` 中間那段填進 `index.html` 的 `PUB_ID`。
-   - 右上「共用」的一般存取權維持「限制」，不要改成知道連結的任何人。
-   - 發布的內容大約有 5 分鐘延遲，同步完稍等一下網頁才會更新。
+6. 把這個 `/exec` 網址填進 `index.html` 的 `API_URL`（或貼給 Claude 幫你填）。這個網址不是密碼，放在公開的網頁裡沒關係；用瀏覽器打開它會看到 `"ok":true` 和 4 個分頁的資料。
+   試算表右上「共用」維持「限制」，不用開連結共用、也不用發布到網路。
 
 ### 2. 電腦這邊（C:\XS\tools）
 
@@ -70,4 +67,4 @@ XQ log ─► xq_daily_report.py（14:00）─► C:\XS\data\*.csv
 
 ## 測試
 
-`sync/test/run_test.sh` 在本機模擬整條流程：假的 C:\XS\data → `sheet_sync.py` → 用假的試算表跑真的 `Code.gs` → 檢查結果（37 項，包括超過分頁列數、連續失敗後補送、讀檔錯誤寫 log、`--full` 防呆）。需要 Node 和 Python 3。
+`sync/test/run_test.sh` 在本機模擬整條流程：假的 C:\XS\data → `sheet_sync.py` → 用假的試算表跑真的 `Code.gs` → 檢查結果（42 項，包括超過分頁列數、連續失敗後補送、讀檔錯誤寫 log、`--full` 防呆）。需要 Node 和 Python 3。
