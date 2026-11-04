@@ -23,7 +23,7 @@
     --accent: #007aff; --link: #0066cc; --up: #d70015; --down: #248a3d; --grid: #e5e5ea;
     --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
     --num: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
-    --gap: 16px; --pad: 20px; --radius: 12px; --radius-control: 8px; --hit: 36px;
+    --gap: 16px; --pad: 20px; --radius: 12px; --radius-control: 8px; --hit: 36px; --seg-on: #ffffff;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -31,7 +31,7 @@
       --ground: #000000; --surface: #1c1c1e; --raised: #232325; --active: #2c2c2e;
       --border: #2c2c2e; --rule: #262628; --control: #48484a;
       --text: #ffffff; --muted: #a1a1a6; --faint: #98989d;
-      --accent: #0a84ff; --link: #409cff; --up: #ff6961; --down: #30d158; --grid: #2c2c2e;
+      --accent: #0a84ff; --link: #409cff; --up: #ff6961; --down: #30d158; --grid: #2c2c2e; --seg-on: #636366;
       color-scheme: dark;
     }
   }
@@ -145,6 +145,32 @@
   .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
   .foot { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 
+  td.l, th.l { text-align: left; }
+  td.chev, th.chev { width: 22px; padding: 0 0 0 4px; color: var(--faint); }
+  td.chev svg { display: block; margin-left: auto; }
+  tbody.pick tr.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .code { font-family: var(--num); font-weight: 600; margin-right: 6px; }
+
+  /* 下一層：單一策略的明細。產品列左邊換成返回鍵，內容沿用同一套卡片 */
+  .view { display: flex; flex-direction: column; gap: var(--gap); }
+  .back { display: inline-flex; align-items: center; gap: 4px; height: var(--hit); margin-left: -8px; padding: 0 10px 0 6px; border: 0; border-radius: var(--radius-control); background: none; color: var(--link); font-size: 17px; cursor: pointer; white-space: nowrap; }
+  .back:hover { background: var(--active); }
+  .d-sub { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 13px; color: var(--muted); }
+  .d-sub .tag { margin-left: 0; }
+  .kv { margin: 0; padding-top: 6px; padding-bottom: 6px; gap: 0; }
+  .kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .kv > div:last-child { border-bottom: 0; }
+  .kv dt { font-size: 15px; color: var(--muted); }
+  .kv dd { margin: 0; text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 17px; font-weight: 600; white-space: nowrap; }
+  .kv dd small { margin-left: 4px; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px var(--pad) 0; }
+  .seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--active); }
+  .seg button { min-width: 84px; height: 32px; padding: 0 14px; border: 0; border-radius: 7px; background: none; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .seg button[aria-pressed="true"] { background: var(--seg-on); box-shadow: 0 0 0 .5px var(--control); font-weight: 600; }
+  .more-wrap { display: flex; justify-content: center; padding: 0 var(--pad) 16px; }
+  #detail td.mob.two { padding-top: 10px; padding-bottom: 10px; }
+  @media (pointer: coarse) { .seg button { height: 40px; } }
+
   .skel { display: inline-block; height: .9em; width: 4em; border-radius: 4px; background: var(--active); vertical-align: middle; }
 
   @media (pointer: coarse) { :root { --hit: 44px; } }
@@ -187,7 +213,8 @@
 <body>
 <header class="bar">
   <div class="bar-in">
-    <div class="mark">
+    <button class="back" id="back" type="button" hidden><svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>策略績效</button>
+    <div class="mark" id="mark">
       <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="7" width="4" height="9" rx="1" fill="var(--accent)"/><rect x="4.4" y="3" width="1.2" height="16" fill="var(--accent)"/><rect x="9" y="9" width="4" height="7" rx="1" fill="var(--text)"/><rect x="10.4" y="6" width="1.2" height="13" fill="var(--text)"/><rect x="15" y="5" width="4" height="8" rx="1" fill="var(--accent)"/><rect x="16.4" y="2" width="1.2" height="14" fill="var(--accent)"/></svg>
       <b>QTW 策略</b><span id="scope">XQ 實盤</span>
     </div>
@@ -196,12 +223,13 @@
 </header>
 
 <main class="page">
+  <p class="alert" id="err" hidden><b>讀不到試算表</b><span id="err-msg">請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。</span><button class="link" id="retry" type="button">再試一次</button></p>
+
+  <div class="view" id="home">
   <div class="title">
     <h1>策略績效</h1>
     <p class="finding" id="finding"><span class="skel" style="width:18em"></span></p>
   </div>
-
-  <p class="alert" id="err" hidden><b>讀不到試算表</b><span id="err-msg">請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。</span><button class="link" id="retry" type="button">再試一次</button></p>
 
   <section class="card perf" aria-labelledby="perf-h">
     <div class="perf-main">
@@ -221,10 +249,10 @@
   </section>
 
   <section class="card" aria-labelledby="st-h">
-    <div class="card-h"><h2 id="st-h">各策略</h2><span class="meta">依分類排列，點一列只看那支策略的持倉和交易</span></div>
+    <div class="card-h"><h2 id="st-h">各策略</h2><span class="meta">依分類排列，點一列看那支策略的股票和每趟進出場</span></div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>策略</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>平均每趟</th><th>持倉</th><th>未實現</th><th>最近出場</th></tr></thead>
+        <thead><tr><th>策略</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>平均每趟</th><th>持倉</th><th>未實現</th><th>最近出場</th><th class="chev"></th></tr></thead>
         <tbody class="pick" id="st-body"></tbody>
       </table>
     </div>
@@ -252,6 +280,55 @@
   </div>
 
   <p class="foot">累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負只看價差，不扣手續費。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
+  </div>
+
+  <div class="view" id="detail" hidden>
+    <div class="title">
+      <h1 id="d-name"></h1>
+      <p class="d-sub" id="d-sub"></p>
+      <p class="finding" id="d-finding"><span class="skel" style="width:14em"></span></p>
+    </div>
+
+    <section class="card perf" id="d-perf" aria-labelledby="d-perf-h">
+      <div class="perf-main">
+        <h2 id="d-perf-h">累積報酬</h2>
+        <div class="lead"><span class="lead-v" id="d-lead"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="d-lead-s"></span></div>
+        <div class="chart" id="d-chart"><p class="chart-empty" id="d-chart-empty" hidden></p></div>
+      </div>
+      <dl class="perf-side kv" id="d-kv"></dl>
+    </section>
+
+    <section class="card" id="d-pos-card" aria-labelledby="d-pos-h" hidden>
+      <div class="card-h"><h2 id="d-pos-h">目前持倉</h2><span class="meta" id="d-pos-meta"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>張數</th><th>進場日</th><th>持有</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
+          <tbody id="d-pos-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="d-tr-card" aria-labelledby="d-tr-h">
+      <div class="card-h"><h2 id="d-tr-h">交易紀錄</h2><span class="meta" id="d-tr-meta"></span></div>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="顯示方式"><button type="button" data-mode="trips" aria-pressed="true">逐筆</button><button type="button" data-mode="stocks" aria-pressed="false">依股票</button></div>
+        <span id="d-chip"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table id="d-trips">
+          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>張數</th><th>進場時間</th><th>進場價</th><th>出場時間</th><th>出場價</th><th>持有</th><th>報酬</th></tr></thead>
+          <tbody id="d-tr-body"></tbody>
+        </table>
+        <table id="d-stocks" hidden>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>最近出場</th><th class="chev"></th></tr></thead>
+          <tbody class="pick" id="d-st-body"></tbody>
+        </table>
+      </div>
+      <div class="more-wrap" id="d-more-wrap" hidden><button class="btn" id="d-more" type="button"></button></div>
+    </section>
+
+    <p class="foot">報酬是每趟扣手續費和稅之後的報酬率，累積報酬是直接相加。勝負只看價差。持有時間：當天進出算到秒，跨日算天數。紅色賺、綠色賠。</p>
+  </div>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -324,6 +401,7 @@
     day: (s) => { const p = F.iso(s).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : '—'; },
     tone: (v) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down'),
     hm: (s) => { const m = /(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; },
+    hms: (s) => { const m = /(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(s || '')); return m ? m[1].padStart(2, '0') + ':' + m[2] + (m[3] ? ':' + m[3] : '') : ''; },
   };
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -333,7 +411,6 @@
 
   let D = null;           // 讀到的原始資料
   let M = null;           // 算好的模型
-  let picked = null;      // 表格點選的策略
   const MAX_DEFAULT = 6;  // 預設最多疊 6 條策略線（趟數最多的），其他要自己點開
   let choice = store.get('qtw-lines') || {};  // 使用者點過的開關：{策略: true/false}
   let hidden = new Set();
@@ -483,35 +560,34 @@
     hidden = new Set(live.filter((s) => (s.name in choice ? !choice[s.name] : !top.has(s.name))).map((s) => s.name));
   };
 
-  // ---- 總績效圖 ----
-  const renderChart = () => {
-    const box = $('chart');
+  // ---- 走勢圖：一條粗的主線（總績效或單一策略），可以再疊細線 ----
+  const hiders = new Map();
+  const plot = (box, empty, o) => {
+    if (!box.clientWidth) return;  // 這一層沒顯示時不畫，切回來再畫
     box.querySelectorAll('svg, .tip').forEach((n) => n.remove());
-    const empty = $('chart-empty');
-    if (!M.dates.length) { empty.hidden = false; empty.textContent = '還沒有出場紀錄，第一趟出場後會畫出走勢。'; return; }
+    if (!o.dates.length) { empty.hidden = false; empty.textContent = o.emptyText; box.classList.remove('short'); return; }
     empty.hidden = true;
-    box.classList.toggle('short', M.dates.length < 3);
+    box.classList.toggle('short', o.dates.length < 3);
     const css = getComputedStyle(document.documentElement);
     const col = (n) => css.getPropertyValue(n).trim();
     const W = Math.max(280, box.clientWidth), H = box.clientHeight || 300;
     // 起點放在第一個出場日的前一天，從 0 開始
-    const t0 = d3.utcDay.offset(new Date(M.dates[0] + 'T00:00:00Z'), -1);
-    const xs = [t0, ...M.dates.map((d) => new Date(d + 'T00:00:00Z'))];
-    const lines = [];
-    ordered().forEach(({ items }) => items.forEach((s) => { if (M.series.has(s.name) && !hidden.has(s.name)) lines.push({ s, v: [0, ...M.series.get(s.name)] }); }));
-    const totalV = [0, ...M.total];
-    const all = [totalV, ...lines.map((l) => l.v)].flat();
+    const t0 = d3.utcDay.offset(new Date(o.dates[0] + 'T00:00:00Z'), -1);
+    const xs = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
+    const lines = (o.lines || []).map((l) => ({ ...l, v: [0, ...l.v] }));
+    const mainV = [0, ...o.main.v];
+    const all = [mainV, ...lines.map((l) => l.v)].flat();
     let lo = Math.min(0, d3.min(all)), hi = Math.max(0, d3.max(all));
     if (hi - lo < 0.01) { hi += 0.005; lo -= 0.005; }
     const y = d3.scaleLinear([lo, hi], [H - 26, 8]).nice(5);
     const ticks = y.ticks(5);
     const step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 0.01;
     const fy = (v) => (v === 0 ? '0%' : (v > 0 ? '' : MINUS) + Math.abs(v * 100).toFixed(step < 0.01 ? 1 : 0) + '%');
-    const ns = 'http://www.w3.org/2000/svg';
-    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', '總績效與各策略累積報酬走勢');
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', o.label);
     const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--num)');
     let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
-    const endText = F.pct(M.total[M.total.length - 1]);
+    const endV = mainV[mainV.length - 1];
+    const endText = F.pct(endV);
     probe.text(endText); const endW = probe.node().getComputedTextLength(); probe.remove();
     const m = { l: left + 10, r: endW + 14 };
     const x = d3.scaleUtc(d3.extent(xs), [m.l, W - m.r]);
@@ -523,14 +599,13 @@
     const xt = xs.length <= 7 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
     g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
     const line = d3.line().x((d, i) => x(xs[i])).y((d) => y(d));
-    lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.s.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.s.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
-    g.append('path').datum(totalV).attr('d', line).attr('fill', 'none').attr('stroke', col('--accent')).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
-    const lx = x(xs[xs.length - 1]), ly = y(totalV[totalV.length - 1]);
+    lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
+    g.append('path').datum(mainV).attr('d', line).attr('fill', 'none').attr('stroke', col('--accent')).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+    const lx = x(xs[xs.length - 1]), ly = y(endV);
     g.append('circle').attr('cx', lx).attr('cy', ly).attr('r', 4).attr('fill', col('--accent'));
-    const endV = totalV[totalV.length - 1];
     g.append('text').attr('x', lx + 8).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
 
-    // 滑過去看那一天每條線的數字
+    // 滑過去（手機點一下）看那一天每條線的數字
     const tip = d3.select(box).append('div').attr('class', 'tip').style('display', 'none');
     const rule = g.append('line').attr('y1', 8).attr('y2', H - 26).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
     const dots = g.append('g').style('display', 'none');
@@ -541,12 +616,13 @@
       const xi = x(xs[i]);
       rule.style('display', null).attr('x1', xi).attr('x2', xi);
       dots.style('display', null).selectAll('*').remove();
-      [...lines.map((l) => ({ c: l.s.color, v: l.v[i] })), { c: col('--accent'), v: totalV[i] }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', 3.5).attr('fill', p.c));
+      [...lines.map((l) => ({ c: l.color, v: l.v[i] })), { c: col('--accent'), v: mainV[i] }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', 3.5).attr('fill', p.c));
       tip.style('display', null).selectAll('*').remove();
-      tip.append('div').attr('class', 'd').text(F.day(M.dates[i - 1]) + ' 收盤後');
+      tip.append('div').attr('class', 'd').text(F.day(o.dates[i - 1]) + ' 收盤後');
       const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
-      row(swatch(col('--accent'), '', 3), '總績效', totalV[i], 'tot');
-      lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.s.color, l.s.dash), l.s.short, l.v[i]));
+      row(swatch(col('--accent'), '', 3), o.main.name, mainV[i], 'tot');
+      lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.color, l.dash), l.short, l.v[i]));
+      if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(i - 1));
       const bw = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
       const scale = bw / W;
       let left = xi * scale + 14; if (left + tw > bw) left = xi * scale - tw - 14;
@@ -555,7 +631,13 @@
     const hide = () => { tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
     svg.style('touch-action', 'pan-y');
     svg.on('pointermove', move).on('pointerdown', move).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') hide(); });
-    hideTip = hide;
+    hiders.set(box.id, hide);
+  };
+
+  const renderChart = () => {
+    const lines = [];
+    ordered().forEach(({ items }) => items.forEach((s) => { if (M.series.has(s.name) && !hidden.has(s.name)) lines.push({ color: s.color, dash: s.dash, short: s.short, v: M.series.get(s.name) }); }));
+    plot($('chart'), $('chart-empty'), { dates: M.dates, main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
   };
 
   // ---- 各策略表（依分類分組，每組有小計） ----
@@ -568,12 +650,11 @@
       td(h, `${cat}（${items.length} 支）`, 'dsk');
       td(h, F.int(n), 'dsk'); td(h, n ? F.rate(w / n) : '—', 'dsk'); td(h, F.pct(ret), 'dsk ' + F.tone(ret)); td(h, F.money(pnl), 'dsk ' + F.tone(pnl));
       td(h, n ? F.pct(ret / n) : '—', 'dsk'); td(h, F.int(pos), 'dsk'); td(h, pos ? F.money(unr) : '—', 'dsk ' + (pos ? F.tone(unr) : '')); td(h, '', 'dsk');
-      td(h, `${cat}（${items.length} 支）`, 'mob l'); td(h, F.pct(ret), 'mob ' + F.tone(ret));
+      td(h, `${cat}（${items.length} 支）`, 'mob l'); td(h, F.pct(ret), 'mob ' + F.tone(ret)); td(h, '', 'chev');
       tb.appendChild(h);
       const quiet = items.filter((s) => !s.n && !s.pos);
       items.filter((s) => s.n || s.pos).forEach((s) => {
-        const tr = el('tr', 'row'); tr.tabIndex = 0; tr.dataset.strategy = s.name; tr.title = s.name;
-        if (picked === s.name) tr.classList.add('sel');
+        const tr = el('tr', 'row'); tr.tabIndex = 0; tr.dataset.strategy = s.name; tr.title = s.name + '：看股票和每趟進出場';
         if (s.status === '停用' || (!s.n && !s.pos)) tr.classList.add('off');
         const c = td(tr, '', 't dsk');
         c.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); c.appendChild(document.createTextNode(s.short));
@@ -594,11 +675,12 @@
         mc.appendChild(el('span', 'sub', s.n || s.pos ? `${s.n} 趟${s.n ? '・' + s.w + '勝' + s.l + '負' : ''}・淨 ${F.money(s.pnl)}${s.pos ? '・持倉 ' + s.pos + '（' + F.money(s.unr) + '）' : ''}` : '還沒有交易'));
         tr.appendChild(mc);
         td(tr, F.pct(s.ret), 'mob ' + F.tone(s.ret));
+        td(tr, '', 'chev').appendChild(chev());
         tb.appendChild(tr);
       });
       if (quiet.length) {
         const q = el('tr', 'quiet');
-        const c = el('td', 't'); c.colSpan = 9;
+        const c = el('td', 't'); c.colSpan = 10;
         c.appendChild(el('span', 'q-l', `還沒有交易（${quiet.length} 支）`));
         quiet.forEach((s) => { const n = el('span', 'q-n', s.short); n.title = s.name; if (s.status && s.status !== '啟用') n.appendChild(el('span', 'tag', s.status)); c.appendChild(n); });
         q.appendChild(c); tb.appendChild(q);
@@ -606,21 +688,24 @@
     });
   };
   const blank = () => { const b = el('span', 'sw'); b.style.width = '22px'; return b; };
+  // 往下一層的箭頭（iOS 清單右邊那個 ›）
+  const chev = () => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', 8); svg.setAttribute('height', 14); svg.setAttribute('viewBox', '0 0 8 14'); svg.setAttribute('aria-hidden', 'true');
+    const p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', 'M1.5 1.5 6.5 7l-5 5.5'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', 2); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(p);
+    return svg;
+  };
 
   const emptyRow = (tb, cols, text) => { const tr = el('tr', 'empty-row'); const c = td(tr, text); c.colSpan = cols; tb.appendChild(tr); };
-  const filterChip = (meta, base) => {
-    meta.replaceChildren(document.createTextNode(base));
-    if (!picked) return;
-    const b = el('button', 'filter'); b.type = 'button'; b.textContent = '只看 ' + shortOf(picked) + '  ✕'; b.title = '顯示全部';
-    b.addEventListener('click', () => { picked = null; renderFiltered(); });
-    meta.replaceChildren(b);
-  };
 
   const renderPositions = () => {
     const tb = $('pos-body'); tb.replaceChildren();
-    const rows = M.positions.filter((p) => !picked || p.strategy === picked).sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
-    filterChip($('pos-meta'), M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + rows.length + ' 檔' : '');
-    if (!rows.length) { emptyRow(tb, 6, picked ? '這支策略目前沒有持倉。' : '目前沒有持倉。'); return; }
+    const rows = M.positions.slice().sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
+    $('pos-meta').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + rows.length + ' 檔' : '';
+    if (!rows.length) { emptyRow(tb, 6, '目前沒有持倉。'); return; }
     rows.forEach((p) => {
       const tr = el('tr');
       two(tr, p.name || p.code, shortOf(p.strategy || '') + '・' + F.day(p.entry_date) + ' 進場', 't dsk');
@@ -639,10 +724,10 @@
   const renderTrips = () => {
     const tb = $('tr-body'); tb.replaceChildren();
     const key = (t) => t.d + ' ' + F.hm(t.exit_time);
-    const all = M.trips.filter((t) => !picked || t.strategy === picked).sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const all = M.trips.slice().sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
     const rows = all.slice(0, Math.max(5, Math.min(8, M.positions.length + 2)));
-    filterChip($('tr-meta'), all.length > rows.length ? `最近 ${rows.length} 趟，共 ${all.length} 趟` : `共 ${all.length} 趟`);
-    if (!rows.length) { emptyRow(tb, 6, picked ? '這支策略還沒有出場紀錄。' : '還沒有出場紀錄。'); return; }
+    $('tr-meta').textContent = all.length > rows.length ? `最近 ${rows.length} 趟，共 ${all.length} 趟` : `共 ${all.length} 趟`;
+    if (!rows.length) { emptyRow(tb, 6, '還沒有出場紀錄。'); return; }
     rows.forEach((t) => {
       const tr = el('tr');
       two(tr, t.name || t.code, shortOf(t.strategy || '') + '・' + (t.trade_type === 'daytrade' ? '當沖' : '波段'), 't dsk');
@@ -658,12 +743,218 @@
     });
   };
 
-  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; };
-  const renderFiltered = () => { if (!M) return; renderStrategies(); renderPositions(); renderTrips(); };
+
+  // ---- 下一層：單一策略的明細（網址 #s=策略名稱，可以直接分享） ----
+  const PAGE = 50;
+  let cur = null, dMode = 'trips', dStock = null, dShown = PAGE, dData = null;
+  const sideOf = (v) => (v === 'short' ? '空' : '多');
+  const secs = (v) => { const m = /(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(v || '')); return m ? +m[1] * 3600 + +m[2] * 60 + +(m[3] || 0) : null; };
+  const daysBetween = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
+  // 持有時間：當天進出算到秒，跨日算天數
+  const holdOf = (t) => {
+    const a = F.iso(t.entry_date), b = F.iso(t.exit_date);
+    if (a && b && a !== b) return daysBetween(a, b) + ' 天';
+    const s1 = secs(t.entry_time), s2 = secs(t.exit_time);
+    const v = s1 != null && s2 != null && s2 >= s1 ? s2 - s1 : t.hold_minutes != null ? Math.round(t.hold_minutes * 60) : null;
+    if (v == null) return '—';
+    const m = Math.floor(v / 60), r = v % 60;
+    if (v < 60) return r + ' 秒';
+    if (v < 600) return m + ' 分' + (r ? ' ' + r + ' 秒' : '');
+    if (v < 3600) return m + ' 分';
+    return Math.floor(m / 60) + ' 時 ' + (m % 60) + ' 分';
+  };
+  const heldOf = (p) => { const a = F.iso(p.entry_date), b = F.iso(p.date); if (!a || !b) return '—'; const n = daysBetween(a, b); return n > 0 ? n + ' 天' : '當天進場'; };
+  // 勝負只看價差（和總覽同一個算法）
+  const winOf = (t) => {
+    const d = t.gross_pnl != null ? t.gross_pnl : t.entry_price != null && t.exit_price != null ? (t.side === 'short' ? t.entry_price - t.exit_price : t.exit_price - t.entry_price) : 0;
+    return d > 0 ? 1 : d < 0 ? -1 : 0;
+  };
+  const when = (d, t) => (F.day(d) + ' ' + F.hms(t)).trim();
+  const stockLine = (code, name, rest) => { const sp = el('span'); if (code) sp.appendChild(el('span', 'code', code)); sp.appendChild(document.createTextNode((name || '') + (rest ? '　' + rest : ''))); return sp; };
+
+  const renderDetail = () => {
+    const name = cur;
+    const s = M && M.strat.find((x) => x.name === name);
+    const short = s ? s.short : shortOf(name);
+    document.title = short + '｜QTW 策略';
+    $('d-name').textContent = short;
+    const sub = $('d-sub'); sub.replaceChildren();
+    if (!M) return;  // 資料還沒讀到：先顯示名稱，讀到後再畫
+    const cards = ['d-perf', 'd-tr-card'];
+    if (!s) {
+      $('d-name').textContent = '找不到這支策略';
+      $('d-finding').textContent = '試算表裡沒有「' + name + '」，可能改過名字。回到策略績效再點一次。';
+      cards.forEach((id) => ($(id).hidden = true)); $('d-pos-card').hidden = true; dData = null;
+      return;
+    }
+    cards.forEach((id) => ($(id).hidden = false));
+    sub.appendChild(el('span', null, [s.name !== s.short ? s.name : null, s.cat].filter(Boolean).join('・')));
+    if (s.status && s.status !== '啟用') sub.appendChild(el('span', 'tag', s.status));
+
+    const trips = M.trips.filter((t) => t.strategy === name);
+    const pos = M.positions.filter((p) => p.strategy === name).sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
+    const dts = [...new Set(trips.map((t) => t.d))].sort();
+    const byDay = d3.rollup(trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, p: d3.sum(v, (t) => t.net_pnl || 0) }), (t) => t.d);
+    // 依股票彙總：交易過的和現在持有的都算
+    const stocks = new Map();
+    const stockOf = (code, nm) => { const k = code || nm || '—'; if (!stocks.has(k)) stocks.set(k, { code: code || '', name: nm || '', n: 0, w: 0, l: 0, t: 0, ret: 0, pnl: 0, last: '', held: false }); return stocks.get(k); };
+    trips.forEach((t) => { const o = stockOf(t.code, t.name); o.n++; const w = winOf(t); if (w > 0) o.w++; else if (w < 0) o.l++; else o.t++; o.ret += t.return_pct || 0; o.pnl += t.net_pnl || 0; if (t.d > o.last) o.last = t.d; if (t.name) o.name = t.name; });
+    pos.forEach((p) => { const o = stockOf(p.code, p.name); o.held = true; });
+    dData = { s, trips, pos, stocks: [...stocks.values()].sort((a, b) => ((b.held ? M.lastPosDate : '') || b.last).localeCompare((a.held ? M.lastPosDate : '') || a.last) || b.n - a.n) };
+
+    // 一句話：最近一次出場的結果，和持倉狀況
+    const f = $('d-finding'); f.replaceChildren();
+    const add = (t, cls) => f.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    if (!trips.length && !pos.length) add('還沒有交易紀錄，第一次進場後會出現在這裡。');
+    if (dts.length) {
+      const d = dts[dts.length - 1], b = byDay.get(d);
+      add('最近一次出場是 ' + F.day(d) + '，'); add(String(b.n), 'n'); add(' 趟淨損益 '); add(F.money(b.p) + ' 元', 'n ' + F.tone(b.p)); add('。');
+    }
+    if (pos.length) {
+      const w = pos[0];
+      add('持倉 '); add(String(pos.length), 'n');
+      if ((w.unrealized_pct ?? 0) < 0) { add(' 檔，' + (w.name || w.code) + ' 跌最多 '); add(F.pct(w.unrealized_pct), 'n down'); add('。'); } else add(' 檔都在成本之上。');
+    } else if (trips.length) add('目前沒有持倉。');
+
+    const ret = d3.sum(trips, (t) => t.return_pct || 0), pnl = d3.sum(trips, (t) => t.net_pnl || 0);
+    const W = trips.filter((t) => winOf(t) > 0).length, L = trips.filter((t) => winOf(t) < 0).length, T = trips.length - W - L;
+    const lv = $('d-lead'); lv.textContent = F.pct(ret); lv.className = 'lead-v ' + F.tone(ret);
+    const ls = $('d-lead-s'); ls.replaceChildren(document.createTextNode('已實現，'), el('span', 'n', F.int(trips.length)), document.createTextNode(' 趟' + (dts.length ? '・' + F.day(dts[0]) + ' 到 ' + F.day(dts[dts.length - 1]) : '')));
+
+    const kv = $('d-kv'); kv.replaceChildren();
+    const row = (label, value, tone, small) => { const d = el('div'); d.appendChild(el('dt', null, label)); const v = el('dd', tone || null, value); if (small) v.appendChild(el('small', null, small)); d.appendChild(v); kv.appendChild(d); };
+    const unr = d3.sum(pos, (p) => p.unrealized_pnl || 0);
+    row('已實現淨損益', trips.length ? F.money(pnl) : '—', F.tone(pnl), trips.length ? '元' : '');
+    row('勝率', trips.length ? F.rate(W / trips.length) : '—', '', trips.length ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '');
+    row('平均每趟', trips.length ? F.pct(ret / trips.length) : '—', trips.length ? F.tone(ret) : '');
+    row('交易過的股票', F.int(dData.stocks.filter((o) => o.n).length), '', '檔');
+    row('持倉', F.int(pos.length), '', '檔');
+    row('未實現損益', pos.length ? F.money(unr) : '—', pos.length ? F.tone(unr) : '', pos.length ? '元' : '');
+
+    let c = 0; const cum = dts.map((d) => (c += byDay.get(d).r));
+    dChart = () => plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } });
+    dChart();
+
+    // 目前持倉：沒有就整張卡收起來（上面那句話已經說了）
+    $('d-pos-card').hidden = !pos.length;
+    $('d-pos-meta').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + pos.length + ' 檔' : '';
+    const pb = $('d-pos-body'); pb.replaceChildren();
+    pos.forEach((p) => {
+      const tr = el('tr');
+      td(tr, p.code || '—', 'dsk');
+      td(tr, p.name || '', 't l dsk');
+      td(tr, sideOf(p.side), 't dsk');
+      td(tr, F.lots(p.shares), 'dsk');
+      td(tr, F.day(p.entry_date), 'dsk');
+      td(tr, heldOf(p), 'dsk');
+      td(tr, F.price(p.avg_cost), 'dsk');
+      td(tr, F.price(p.close_price), 'dsk');
+      two(tr, F.money(p.unrealized_pnl), F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pnl));
+      const mc = el('td', 'mob l t two');
+      mc.appendChild(stockLine(p.code, p.name, sideOf(p.side) + ' ' + F.lots(p.shares) + ' 張'));
+      mc.appendChild(el('span', 'sub', F.day(p.entry_date) + ' 進場・持有 ' + heldOf(p)));
+      mc.appendChild(el('span', 'sub', '均價 ' + F.price(p.avg_cost) + '・收盤 ' + F.price(p.close_price)));
+      tr.appendChild(mc);
+      two(tr, F.pct(p.unrealized_pct), F.money(p.unrealized_pnl), 'mob ' + F.tone(p.unrealized_pnl));
+      pb.appendChild(tr);
+    });
+    renderDetailList();
+  };
+  let dChart = () => {};
+
+  // 交易紀錄：逐筆／依股票兩種看法
+  const renderDetailList = () => {
+    if (!dData) return;
+    const { trips, stocks } = dData;
+    document.querySelectorAll('#d-tr-card .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === dMode)));
+    $('d-tr-meta').textContent = `共 ${trips.length} 趟・${stocks.filter((o) => o.n).length} 檔股票`;
+    const chip = $('d-chip'); chip.replaceChildren();
+    $('d-trips').hidden = dMode !== 'trips'; $('d-stocks').hidden = dMode !== 'stocks';
+    const more = $('d-more-wrap'); more.hidden = true;
+    if (dMode === 'stocks') {
+      const tb = $('d-st-body'); tb.replaceChildren();
+      if (!stocks.length) { emptyRow(tb, 8, '還沒有交易過任何股票。'); return; }
+      stocks.forEach((o) => {
+        const tr = el('tr', o.n ? 'row' : '');
+        if (o.n) { tr.tabIndex = 0; tr.dataset.code = o.code || o.name; tr.title = '看 ' + (o.name || o.code) + ' 的每一趟'; }
+        td(tr, o.code || '—', 'dsk');
+        const nc = td(tr, o.name, 't l dsk'); if (o.held) nc.appendChild(el('span', 'tag', '持倉中'));
+        td(tr, F.int(o.n), 'dsk');
+        two(tr, o.n ? F.rate(o.w / o.n) : '—', o.n ? `${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}` : null, 'dsk');
+        td(tr, o.n ? F.pct(o.ret) : '—', 'dsk ' + (o.n ? F.tone(o.ret) : ''));
+        td(tr, o.n ? F.money(o.pnl) : '—', 'dsk ' + (o.n ? F.tone(o.pnl) : ''));
+        td(tr, o.last ? F.day(o.last) : '—', 'dsk');
+        const mc = el('td', 'mob l t two');
+        const top = stockLine(o.code, o.name); if (o.held) top.appendChild(el('span', 'tag', '持倉中')); mc.appendChild(top);
+        mc.appendChild(el('span', 'sub', o.n ? `${o.n} 趟・${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}・淨 ${F.money(o.pnl)}` : '還沒有出場'));
+        if (o.n) mc.appendChild(el('span', 'sub', '最近出場 ' + F.day(o.last)));
+        tr.appendChild(mc);
+        td(tr, o.n ? F.pct(o.ret) : '—', 'mob ' + (o.n ? F.tone(o.ret) : ''));
+        const cc = td(tr, '', 'chev'); if (o.n) cc.appendChild(chev());
+        tb.appendChild(tr);
+      });
+      return;
+    }
+    if (dStock) {
+      const o = stocks.find((x) => (x.code || x.name) === dStock);
+      const b = el('button', 'filter'); b.type = 'button'; b.textContent = '只看 ' + (o ? (o.code + ' ' + o.name).trim() : dStock) + '  ✕'; b.title = '顯示全部股票';
+      b.addEventListener('click', () => { dStock = null; dShown = PAGE; renderDetailList(); });
+      chip.appendChild(b);
+    }
+    const key = (t) => t.d + ' ' + F.hms(t.exit_time);
+    const list = trips.filter((t) => !dStock || (t.code || t.name) === dStock).sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const tb = $('d-tr-body'); tb.replaceChildren();
+    if (!list.length) { emptyRow(tb, 10, '還沒有出場紀錄。'); return; }
+    list.slice(0, dShown).forEach((t) => {
+      const tr = el('tr');
+      td(tr, t.code || '—', 'dsk');
+      td(tr, t.name || '', 't l dsk');
+      td(tr, sideOf(t.side), 't dsk');
+      td(tr, F.lots(t.shares), 'dsk');
+      td(tr, when(t.entry_date, t.entry_time), 'dsk');
+      td(tr, F.price(t.entry_price), 'dsk');
+      td(tr, when(t.d, t.exit_time), 'dsk');
+      td(tr, F.price(t.exit_price), 'dsk');
+      td(tr, holdOf(t), 'dsk');
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'dsk ' + F.tone(t.return_pct));
+      const mc = el('td', 'mob l t two');
+      mc.appendChild(stockLine(t.code, t.name, sideOf(t.side) + ' ' + F.lots(t.shares) + ' 張'));
+      mc.appendChild(el('span', 'sub', '進 ' + when(t.entry_date, t.entry_time) + '・' + F.price(t.entry_price)));
+      // 當天進出的，出場那行省略日期，手機才放得下
+      mc.appendChild(el('span', 'sub', '出 ' + (F.iso(t.entry_date) === t.d ? F.hms(t.exit_time) || F.day(t.d) : when(t.d, t.exit_time)) + '・' + F.price(t.exit_price) + '・' + holdOf(t)));
+      tr.appendChild(mc);
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'mob ' + F.tone(t.return_pct));
+      tb.appendChild(tr);
+    });
+    if (list.length > dShown) { more.hidden = false; $('d-more').textContent = `再顯示 ${Math.min(PAGE, list.length - dShown)} 趟（還有 ${list.length - dShown} 趟）`; }
+  };
+
+  // ---- 兩層之間切換 ----
+  let homeY = 0, pushed = false;
+  const readHash = () => { const m = /^#s=(.+)$/.exec(location.hash); if (!m) return null; try { return decodeURIComponent(m[1]); } catch (e) { return null; } };
+  const route = () => {
+    const name = readHash();
+    const was = cur;
+    cur = name;
+    $('home').hidden = !!name; $('detail').hidden = !name;
+    $('mark').hidden = !!name; $('back').hidden = !name;
+    hiders.forEach((h) => h());
+    if (name) {
+      if (name !== was) { dMode = 'trips'; dStock = null; dShown = PAGE; window.scrollTo(0, 0); }
+      renderDetail();
+    } else {
+      document.title = 'QTW 策略績效';
+      if (M) renderChart();
+      if (was) window.scrollTo(0, homeY);
+    }
+  };
+  const openStrategy = (name) => { homeY = window.scrollY; pushed = true; location.hash = 's=' + encodeURIComponent(name); };
+  const goBack = () => { if (pushed) { pushed = false; history.back(); } else { history.replaceState(null, '', location.pathname + location.search); route(); } };
+
+  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
 
   // 手機：手指放開後提示留著，點圖以外的地方才收起來
-  let hideTip = () => {};
-  document.addEventListener('pointerdown', (ev) => { if (!$('chart').contains(ev.target)) hideTip(); }, { passive: true });
+  document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart')) hiders.forEach((h) => h()); }, { passive: true });
 
   let busy = false, lastOk = null;
   const refresh = async () => {
@@ -695,20 +986,30 @@
       $('err-msg').textContent = lastOk
         ? '這次沒讀到，畫面是 ' + lastOk.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' 的資料。' : why;
       $('loaded').textContent = lastOk ? '更新失敗' : '沒有讀到資料';
-      if (!D) { $('finding').textContent = '等試算表讀到後顯示。'; document.querySelectorAll('.skel').forEach((k) => k.replaceWith(document.createTextNode('—'))); }
+      if (!D) { $('finding').textContent = '等試算表讀到後顯示。'; $('d-finding').textContent = '等試算表讀到後顯示。'; document.querySelectorAll('.skel').forEach((k) => k.replaceWith(document.createTextNode('—'))); }
     } finally { busy = false; }
   };
 
-  const pick = (tr) => { const s = tr && tr.dataset.strategy; if (!s) return; picked = picked === s ? null : s; renderFiltered(); };
-  const st = $('st-body');
-  st.addEventListener('click', (ev) => pick(ev.target.closest('tr.row')));
-  st.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); pick(ev.target.closest('tr.row')); } });
+  // 列可以點也可以用鍵盤（Enter／空白鍵）
+  const onRow = (tb, fn) => {
+    tb.addEventListener('click', (ev) => { const tr = ev.target.closest('tr.row'); if (tr) fn(tr); });
+    tb.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { const tr = ev.target.closest('tr.row'); if (tr) { ev.preventDefault(); fn(tr); } } });
+  };
+  onRow($('st-body'), (tr) => openStrategy(tr.dataset.strategy));
+  onRow($('d-st-body'), (tr) => { dStock = tr.dataset.code; dMode = 'trips'; dShown = PAGE; renderDetailList(); });
+  document.querySelectorAll('#d-tr-card .seg button').forEach((b) => b.addEventListener('click', () => { if (dMode === b.dataset.mode) return; dMode = b.dataset.mode; dStock = null; dShown = PAGE; renderDetailList(); }));
+  $('d-more').addEventListener('click', () => { dShown += PAGE; renderDetailList(); });
+  $('back').addEventListener('click', goBack);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && cur && !ev.defaultPrevented) goBack(); });
+  window.addEventListener('hashchange', route);
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   $('reload').addEventListener('click', refresh);
   $('retry').addEventListener('click', refresh);
-  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => M && renderChart(), 150); });
+  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => { if (!M) return; if (cur) dChart(); else renderChart(); }, 150); });
   dark.addEventListener('change', () => D && renderAll());
   setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 5 * 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && D) refresh(); });
+  route();
   refresh();
 })();
 </script>
