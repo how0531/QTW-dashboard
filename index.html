@@ -4,202 +4,231 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark light">
 <title>QTW 策略績效</title>
+<script>
+  // 先決定深淺色再畫面，避免閃一下。預設深色（金融儀表板的建議），使用者切過就記住
+  (function () { var t = null; try { t = JSON.parse(localStorage.getItem('qtw-theme')); } catch (e) {}
+    document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
   /*
-    版面：上方一條產品列，下面是一欄最寬 1200px 的畫布，左右各 24px（手機 16px）。
-    卡片間距一律 16px。總績效卡是 2fr + 1fr：左邊圖、右邊開關清單；手機改成上下。
-    顏色只放在資料上：總績效線用唯一的藍，各策略依分類用三組色系＋虛線樣式區分，紅賺綠賠只用在數字。
-    Apple 設計原則：系統字型（SF Pro / 蘋方）、Apple 系統色（文字用無障礙版本）、分組卡片、可點的東西至少 44px 高。
+    設計系統（UI UX Pro Max：Financial Dashboard → Dark Mode (OLED) + Data-Dense Dashboard，輔以 Minimalism & Swiss Style）
+    - 預設深色，可切淺色；顏色用語意 token，元件裡不寫死色碼
+    - 字：數字用 Fira Code（等寬，欄位對齊不跳動），文字用 Fira Sans＋思源黑體
+    - 密度：間距 8 的倍數，卡片內距 16px，表格列高 40px（觸控 44px）
+    - 顏色只放在資料上：總績效用信任藍，各策略依分類分色系＋線條樣式，紅賺綠賠（台股慣例）只用在數字
   */
   :root {
-    --ground: #f2f2f7; --surface: #ffffff; --raised: #f7f7fa; --active: #e5e5ea;
-    --border: #e5e5ea; --rule: #ededf0; --control: #d1d1d6;
-    --text: #000000; --muted: #6e6e73; --faint: #6e6e73;
-    --accent: #007aff; --link: #0066cc; --up: #d70015; --down: #248a3d; --grid: #e5e5ea;
-    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
-    --num: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
-    --gap: 16px; --pad: 20px; --radius: 12px; --radius-control: 8px; --hit: 36px; --seg-on: #ffffff;
-    color-scheme: light;
+    --ground: #020617; --surface: #0b1222; --raised: #111a2e; --active: #1a2338;
+    --border: #1e293b; --rule: #162036; --control: #334155;
+    --text: #f8fafc; --muted: #94a3b8; --faint: #7c8ba1;
+    --accent: #3b82f6; --accent-soft: rgba(59,130,246,.14); --link: #60a5fa;
+    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155;
+    --ok-bg: rgba(74,222,128,.12); --ok: #4ade80; --bad-bg: rgba(248,113,113,.14); --bad: #fca5a5;
+    --tip-shadow: 0 8px 24px rgba(0,0,0,.5);
+    --font: "Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --num: "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --gap: 12px; --pad: 16px; --radius: 10px; --radius-control: 8px; --hit: 36px; --row: 40px;
+    color-scheme: dark;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ground: #000000; --surface: #1c1c1e; --raised: #232325; --active: #2c2c2e;
-      --border: #2c2c2e; --rule: #262628; --control: #48484a;
-      --text: #ffffff; --muted: #a1a1a6; --faint: #98989d;
-      --accent: #0a84ff; --link: #409cff; --up: #ff6961; --down: #30d158; --grid: #2c2c2e; --seg-on: #636366;
-      color-scheme: dark;
-    }
+  :root[data-theme="light"] {
+    --ground: #f1f5f9; --surface: #ffffff; --raised: #f8fafc; --active: #e2e8f0;
+    --border: #e2e8f0; --rule: #eef2f6; --control: #cbd5e1;
+    --text: #0f172a; --muted: #475569; --faint: #64748b;
+    --accent: #2563eb; --accent-soft: rgba(37,99,235,.10); --link: #1d4ed8;
+    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff;
+    --ok-bg: #dcfce7; --ok: #166534; --bad-bg: #fee2e2; --bad: #991b1b;
+    --tip-shadow: 0 8px 24px rgba(15,23,42,.12);
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.47; -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
   button { font: inherit; color: inherit; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .n { font-family: var(--num); font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  .n { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; letter-spacing: -0.01em; }
   .up { color: var(--up); } .down { color: var(--down); } .mute { color: var(--muted); }
+  button, .tg, tbody.pick tr.row { transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
   /* 產品列 */
-  .bar { position: sticky; top: 0; z-index: 5; background: var(--ground); border-bottom: 1px solid var(--border); padding-top: env(safe-area-inset-top, 0px); }
-  .bar-in { max-width: 1248px; margin-inline: auto; height: 56px; display: flex; align-items: center; gap: 12px; padding-inline: max(24px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-right, 0px)); }
+  .bar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--ground) 88%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--border); padding-top: env(safe-area-inset-top, 0px); }
+  .bar-in { max-width: 1280px; margin-inline: auto; height: 56px; display: flex; align-items: center; gap: 12px; padding-inline: max(24px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-right, 0px)); }
   .mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mark svg { flex: none; }
-  .mark b { font-size: 17px; font-weight: 600; white-space: nowrap; }
+  .mark b { font-size: 16px; font-weight: 700; letter-spacing: .01em; white-space: nowrap; }
   .mark span { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .fresh .stale { color: var(--up); font-weight: 500; }
-  .fresh { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); white-space: nowrap; }
-  .btn { height: var(--hit); padding: 0 14px; border-radius: 999px; border: 0; background: var(--active); color: var(--link); cursor: pointer; font-size: 15px; font-weight: 500; }
-  .btn:hover { background: var(--control); }
+  .fresh { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .fresh .stale { color: var(--up); font-weight: 600; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: var(--hit); padding: 0 12px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; }
+  .btn:hover { background: var(--raised); border-color: var(--control); }
   .btn:active { transform: translateY(1px); }
+  .btn svg { flex: none; color: var(--muted); }
+  .icon-btn { width: var(--hit); padding: 0; justify-content: center; }
+  :root[data-theme="light"] .i-sun, :root:not([data-theme="light"]) .i-moon { display: none; }
 
   /* 畫布 */
-  .page { max-width: 1248px; margin-inline: auto; padding: 24px max(24px, env(safe-area-inset-right, 0px)) calc(48px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
-  .title { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-  h1 { margin: 0; font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
-  .finding { margin: 0; font-size: 15px; color: var(--text); }
-  .finding .n { font-weight: 600; }
-  .alert { margin: 0; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+  .page { max-width: 1280px; margin-inline: auto; padding: 20px max(24px, env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
+  .title { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+  h1 { margin: 0; font-size: 24px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+  .finding { margin: 0; font-size: 14px; color: var(--muted); }
+  .finding .n { font-weight: 600; color: var(--text); }
+  .finding .n.up { color: var(--up); } .finding .n.down { color: var(--down); }
+  .alert { margin: 0; padding: 10px 14px; border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--up) 40%, var(--border)); background: var(--bad-bg); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
   .alert b { color: var(--up); font-weight: 600; }
-  .link { border: 0; background: none; padding: 0 4px; min-height: var(--hit); color: var(--link); cursor: pointer; font-size: 15px; }
+  .link { border: 0; background: none; padding: 0 4px; min-height: var(--hit); color: var(--link); cursor: pointer; font-size: 14px; font-weight: 500; }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
-  .card-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 16px var(--pad) 0; }
-  h2 { margin: 0; font-size: 17px; font-weight: 600; }
-  .meta { font-size: 13px; color: var(--muted); }
+  .card-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 14px var(--pad) 0; }
+  h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+  .meta { font-size: 12px; color: var(--muted); }
+  .legend-hi { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 
-  /* 總績效 */
-  .perf { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-  .perf-main { padding: 16px var(--pad) 12px; min-width: 0; display: flex; flex-direction: column; }
-  .perf-side { border-left: 1px solid var(--border); padding: 16px var(--pad); min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-  .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
-  .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
-  .lead-s { font-size: 13px; color: var(--muted); }
+  /* 指標列：一個容器分格，第一格是累積報酬 */
+  .kpis { display: grid; grid-template-columns: minmax(0, 1.35fr) repeat(5, minmax(0, 1fr)); }
+  .kpi { padding: 14px var(--pad); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .kpi + .kpi { border-left: 1px solid var(--border); }
+  .kpi-l { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+  .kpi-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 20px; font-weight: 600; line-height: 1.25; white-space: nowrap; letter-spacing: -0.02em; }
+  .kpi-v small { font-family: var(--font); font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; letter-spacing: 0; }
+  .kpi-s { font-size: 12px; color: var(--muted); }
+  .kpi-lead { background: linear-gradient(var(--accent-soft), var(--accent-soft)); border-radius: var(--radius) 0 0 var(--radius); }
+  .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+  .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; }
+  .lead-s { font-size: 12px; color: var(--muted); }
   .lead-s .n { color: var(--text); font-weight: 500; }
-  .chart { position: relative; margin-top: 12px; flex: 1 1 auto; min-height: 300px; }
+  .lead-s .hl { display: block; margin-top: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-size: 13px; font-weight: 600; background: var(--active); color: var(--text); width: max-content; margin-top: 2px; }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+
+  /* 總績效：左圖右開關 */
+  .perf { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); }
+  .perf-main { padding: 14px var(--pad) 10px; min-width: 0; display: flex; flex-direction: column; }
+  .perf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+  .perf-side { border-left: 1px solid var(--border); padding: 14px 12px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .chart { position: relative; margin-top: 10px; flex: 1 1 auto; min-height: 320px; }
   .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .chart svg:focus-visible { outline: 2px solid var(--link); outline-offset: 4px; border-radius: 4px; }
   .chart.short { flex: none; height: 200px; min-height: 0; }
   .chart-empty { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-size: 13px; color: var(--muted); }
-  .tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); padding: 8px 10px; font-size: 12px; min-width: 150px; }
-  .tip .d { color: var(--muted); margin-bottom: 4px; }
-  .tip .r { display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; align-items: center; line-height: 1.7; }
+  .tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--control); border-radius: 8px; box-shadow: var(--tip-shadow); padding: 8px 10px; font-size: 12px; min-width: 160px; }
+  .tip .d { color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tip .r { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; line-height: 1.75; }
   .tip .r .n { text-align: right; }
   .tip .tot { font-weight: 600; }
+  .hi-tag { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--link); font-weight: 600; font-size: 11px; line-height: 18px; }
 
-  .grp { display: flex; flex-direction: column; gap: 2px; }
-  .grp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0 8px; min-height: var(--hit); cursor: pointer; text-align: left; font-size: 13px; color: var(--muted); }
-  .grp-h:hover { color: var(--text); }
-  .grp-h .n { font-size: 13px; }
-  .tg { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: var(--hit); padding: 0 8px; border: 0; border-radius: var(--radius-control); background: none; cursor: pointer; text-align: left; font-size: 15px; }
+  .grp { display: flex; flex-direction: column; gap: 1px; }
+  .grp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0 8px; min-height: 32px; cursor: pointer; text-align: left; font-size: 12px; color: var(--muted); letter-spacing: .02em; border-radius: 6px; }
+  .grp-h:hover { color: var(--text); background: var(--raised); }
+  .grp-h .n { font-size: 12px; }
+  .tg { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: var(--hit); padding: 0 8px; border: 0; border-radius: var(--radius-control); background: none; cursor: pointer; text-align: left; font-size: 14px; }
   .tg:hover { background: var(--raised); }
   .tg[aria-pressed="false"] { color: var(--faint); }
   .tg[aria-pressed="false"] svg { opacity: .3; }
   .tg[aria-pressed="false"] .n { color: var(--faint); }
   .tg-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tg.total { cursor: default; font-weight: 600; }
-  .tg.total:hover { background: none; }
-  .idle { font-size: 13px; color: var(--muted); margin: 0; padding: 0 8px; }
-
-  /* 指標列：一個容器用細線分格 */
-  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .kpi { padding: 14px var(--pad); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .kpi + .kpi { border-left: 1px solid var(--border); }
-  .kpi-l { font-size: 13px; color: var(--muted); }
-  .kpi-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 600; line-height: 1.25; white-space: nowrap; }
-  .kpi-v small { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 2px; }
-  .kpi-s { font-size: 13px; color: var(--muted); }
-  .pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 500; background: var(--active); color: var(--text); width: max-content; margin-top: 3px; }
-  .pill.ok { background: #dcfae5; color: #04250e; }
-  .pill.bad { background: #ffedea; color: #831c1e; }
-  @media (prefers-color-scheme: dark) { .pill.ok { background: #172a1d; color: #3fc07a; } .pill.bad { background: #2c1a20; color: #ff7a8a; } }
+  .tg.total { cursor: default; font-weight: 600; background: var(--accent-soft); }
+  .tg.total:hover { background: var(--accent-soft); }
+  .idle { font-size: 12px; color: var(--muted); margin: 0; padding: 0 8px; line-height: 1.6; }
 
   /* 表格 */
-  .tbl-wrap { overflow-x: auto; padding: 4px var(--pad) 12px; }
+  .tbl-wrap { overflow-x: auto; padding: 6px var(--pad) 10px; }
   table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th { text-align: right; font-weight: 400; font-size: 13px; color: var(--muted); padding: 10px 8px 8px; white-space: nowrap; border-bottom: 1px solid var(--border); }
-  td { text-align: right; padding: 0 8px; height: 48px; border-bottom: 1px solid var(--rule); white-space: nowrap; font-family: var(--num); font-variant-numeric: tabular-nums; font-weight: 500; }
+  th { text-align: right; font-weight: 500; font-size: 12px; color: var(--muted); padding: 8px 8px 8px; white-space: nowrap; border-bottom: 1px solid var(--border); letter-spacing: .02em; }
+  td { text-align: right; padding: 0 8px; height: var(--row); border-bottom: 1px solid var(--rule); white-space: nowrap; font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+  tbody tr:last-child td { border-bottom: 0; }
   th:first-child, td:first-child { text-align: left; padding-left: 0; }
   th:last-child, td:last-child { padding-right: 0; }
-  td.t { font-family: var(--font); font-weight: 400; }
-  td .sub { display: block; font-size: 13px; color: var(--muted); font-weight: 400; line-height: 1.25; }
+  td.t { font-family: var(--font); font-weight: 400; letter-spacing: 0; }
+  td .sub { display: block; font-family: var(--font); font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.3; letter-spacing: 0; }
   td.two { line-height: 1.3; }
-  tr.cat td { height: 40px; background: var(--raised); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 14px; }
-  tr.cat td:first-child { font-family: var(--font); padding-left: 10px; }
+  tr.cat td { height: 34px; background: var(--raised); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr.cat td:first-child { font-family: var(--font); padding-left: 10px; color: var(--muted); letter-spacing: .02em; }
   tr.cat td:last-child { padding-right: 10px; }
   tbody.pick tr.row { cursor: pointer; }
   tbody.pick tr.row:hover td { background: var(--raised); }
   tr.sel td { background: var(--active) !important; }
   tr.off td { color: var(--faint); }
-  .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-size: 11px; background: var(--active); color: var(--muted); vertical-align: 1px; }
+  .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-family: var(--font); font-size: 11px; line-height: 18px; background: var(--active); color: var(--muted); vertical-align: 1px; font-weight: 500; letter-spacing: 0; }
   .sw { display: inline-block; vertical-align: middle; margin-right: 8px; }
   td.mob, th.mob { display: none; }
-  tr.quiet td { height: auto; padding: 10px 0 12px; white-space: normal; color: var(--muted); font-size: 13px; line-height: 1.9; }
+  tr.quiet td { height: auto; padding: 10px 0 12px; white-space: normal; color: var(--muted); font-family: var(--font); font-size: 12px; line-height: 1.9; font-weight: 400; letter-spacing: 0; }
   .q-l { margin-right: 10px; }
   .q-n { display: inline-block; white-space: nowrap; margin-right: 12px; color: var(--faint); }
-  .filter { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; border: 0; background: var(--active); color: var(--link); cursor: pointer; font-size: 13px; font-weight: 500; }
-  .empty-row td { height: 44px; color: var(--muted); font-family: var(--font); font-weight: 400; text-align: left; }
+  .filter { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised); color: var(--link); cursor: pointer; font-size: 13px; font-weight: 500; }
+  .empty-row td { height: 44px; color: var(--muted); font-family: var(--font); font-weight: 400; text-align: left; letter-spacing: 0; }
   .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
-  .foot { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .foot { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.7; }
 
   td.l, th.l { text-align: left; }
   td.chev, th.chev { width: 22px; padding: 0 0 0 4px; color: var(--faint); }
   td.chev svg { display: block; margin-left: auto; }
-  tbody.pick tr.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  tbody.pick tr.row:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
   .code { font-family: var(--num); font-weight: 600; margin-right: 6px; }
 
-  /* 下一層：單一策略的明細。產品列左邊換成返回鍵，內容沿用同一套卡片 */
+  /* 下一層：單一策略的明細 */
   .view { display: flex; flex-direction: column; gap: var(--gap); }
-  .back { display: inline-flex; align-items: center; gap: 4px; height: var(--hit); margin-left: -8px; padding: 0 10px 0 6px; border: 0; border-radius: var(--radius-control); background: none; color: var(--link); font-size: 17px; cursor: pointer; white-space: nowrap; }
-  .back:hover { background: var(--active); }
-  .d-sub { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 13px; color: var(--muted); }
+  .back { display: inline-flex; align-items: center; gap: 4px; height: var(--hit); margin-left: -8px; padding: 0 10px 0 6px; border: 0; border-radius: var(--radius-control); background: none; color: var(--link); font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .back:hover { background: var(--raised); }
+  .d-sub { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 12px; color: var(--muted); }
   .d-sub .tag { margin-left: 0; }
   .kv { margin: 0; padding-top: 6px; padding-bottom: 6px; gap: 0; }
-  .kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--rule); }
   .kv > div:last-child { border-bottom: 0; }
-  .kv dt { font-size: 15px; color: var(--muted); }
-  .kv dd { margin: 0; text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; font-size: 17px; font-weight: 600; white-space: nowrap; }
-  .kv dd small { margin-left: 4px; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .kv dt { font-size: 13px; color: var(--muted); }
+  .kv dd { margin: 0; text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 16px; font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
+  .kv dd small { margin-left: 4px; font-family: var(--font); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
   .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px var(--pad) 0; }
-  .seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--active); }
-  .seg button { min-width: 84px; height: 32px; padding: 0 14px; border: 0; border-radius: 7px; background: none; cursor: pointer; font-size: 13px; font-weight: 500; }
-  .seg button[aria-pressed="true"] { background: var(--seg-on); box-shadow: 0 0 0 .5px var(--control); font-weight: 600; }
+  .seg { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--active); }
+  .seg button { min-width: 84px; height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.2); font-weight: 600; }
   .more-wrap { display: flex; justify-content: center; padding: 0 var(--pad) 16px; }
   #detail td.mob.two { padding-top: 10px; padding-bottom: 10px; }
   @media (pointer: coarse) { .seg button { height: 40px; } }
 
-  .skel { display: inline-block; height: .9em; width: 4em; border-radius: 4px; background: var(--active); vertical-align: middle; }
+  .skel { display: inline-block; height: .9em; width: 4em; border-radius: 4px; background: var(--active); vertical-align: middle; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .5; } }
 
-  @media (pointer: coarse) { :root { --hit: 44px; } }
+  @media (pointer: coarse) { :root { --hit: 44px; --row: 44px; } }
+  @media (max-width: 1080px) {
+    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .kpi:nth-child(4) { border-left: 0; }
+    .kpi:nth-child(n+4) { border-top: 1px solid var(--border); }
+    .kpi-lead { border-radius: var(--radius) 0 0 0; }
+  }
   @media (max-width: 980px) {
     .perf { grid-template-columns: 1fr; }
     .chart { flex: none; height: 300px; min-height: 0; }
     .perf-side { border-left: 0; border-top: 1px solid var(--border); }
     .two-col { grid-template-columns: 1fr; }
-    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .kpi:nth-child(4) { border-left: 0; }
-    .kpi:nth-child(n+4) { border-top: 1px solid var(--border); }
-    .kpi:nth-child(5) { grid-column: span 2; }
   }
   @media (max-width: 640px) {
-    .bar-in { padding-inline: 16px; }
+    .bar-in { padding-inline: 16px; gap: 8px; }
     .mark span { display: none; }
     .page { padding-inline: 16px; padding-top: 16px; }
-    :root { --pad: 16px; --hit: 44px; }
-    h1 { font-size: 28px; }
-    .lead-v { font-size: 34px; }
-    .fresh { font-size: 12px; gap: 8px; }
-    .fresh .btn { padding: 0 12px; }
-    .chart { height: 220px; }
+    :root { --pad: 14px; --hit: 44px; --row: 44px; }
+    h1 { font-size: 22px; }
+    .lead-v { font-size: 30px; }
+    .fresh { font-size: 12px; gap: 6px; }
+    .fresh .btn .lbl { display: none; }
+    .fresh #reload { width: var(--hit); padding: 0; justify-content: center; }
+    .chart { height: 240px; }
     .chart.short { height: 200px; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi:nth-child(n) { border-left: 0; border-top: 0; }
-    .kpi:nth-child(even) { border-left: 1px solid var(--border); }
-    .kpi:nth-child(n+3) { border-top: 1px solid var(--border); }
-    .kpi:last-child { grid-column: 1 / -1; border-left: 0; }
+    .kpi-lead { grid-column: 1 / -1; border-radius: var(--radius) var(--radius) 0 0; }
+    .kpi:nth-child(odd):not(.kpi-lead) { border-left: 1px solid var(--border); }
+    .kpi:nth-child(n+2) { border-top: 1px solid var(--border); }
+    .kpi:last-child:nth-child(even) { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+    .kpi:last-child:nth-child(even) .pill { margin-top: 0; }
     /* 表格在手機變成兩行的清單：第一行名稱和主要數字，第二行其他欄位 */
     thead { display: none; }
     td.dsk { display: none; }
@@ -218,7 +247,11 @@
       <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="7" width="4" height="9" rx="1" fill="var(--accent)"/><rect x="4.4" y="3" width="1.2" height="16" fill="var(--accent)"/><rect x="9" y="9" width="4" height="7" rx="1" fill="var(--text)"/><rect x="10.4" y="6" width="1.2" height="13" fill="var(--text)"/><rect x="15" y="5" width="4" height="8" rx="1" fill="var(--accent)"/><rect x="16.4" y="2" width="1.2" height="14" fill="var(--accent)"/></svg>
       <b>QTW 策略</b><span id="scope">XQ 實盤</span>
     </div>
-    <div class="fresh"><span id="loaded">讀取中…</span><button class="btn" id="reload" type="button">重新整理</button></div>
+    <div class="fresh">
+      <span id="loaded">讀取中…</span>
+      <button class="btn" id="reload" type="button" aria-label="重新整理"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V8H16"/></svg><span class="lbl">重新整理</span></button>
+      <button class="btn icon-btn" id="theme" type="button" aria-label="切換成淺色" title="切換成淺色"><svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg><svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button>
+    </div>
   </div>
 </header>
 
@@ -231,21 +264,21 @@
     <p class="finding" id="finding"><span class="skel" style="width:18em"></span></p>
   </div>
 
-  <section class="card perf" aria-labelledby="perf-h">
-    <div class="perf-main">
-      <h2 id="perf-h">總績效</h2>
-      <div class="lead"><span class="lead-v" id="lead-v"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="lead-s"></span></div>
-      <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
-    </div>
-    <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
-  </section>
-
-  <section class="card kpis" aria-label="其他指標">
+  <section class="card kpis" aria-label="主要指標">
+    <div class="kpi kpi-lead"><span class="kpi-l">累積報酬</span><span class="lead-v" id="lead-v"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="lead-s"></span></div>
     <div class="kpi"><span class="kpi-l">已實現淨損益</span><span class="kpi-v" id="k-pnl"><span class="skel"></span></span><span class="kpi-s">扣手續費和稅</span></div>
     <div class="kpi"><span class="kpi-l">勝率</span><span class="kpi-v" id="k-win"><span class="skel"></span></span><span class="kpi-s" id="k-wl">&nbsp;</span></div>
     <div class="kpi"><span class="kpi-l">持倉</span><span class="kpi-v" id="k-pos"><span class="skel"></span></span><span class="kpi-s" id="k-pos-s">&nbsp;</span></div>
     <div class="kpi"><span class="kpi-l">未實現損益</span><span class="kpi-v" id="k-unr"><span class="skel"></span></span><span class="kpi-s" id="k-unr-s">&nbsp;</span></div>
     <div class="kpi"><span class="kpi-l">和電腦資料核對</span><span class="pill" id="k-check">—</span></div>
+  </section>
+
+  <section class="card perf" aria-labelledby="perf-h">
+    <div class="perf-main">
+      <div class="perf-head"><h2 id="perf-h">總績效走勢</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+      <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
+    </div>
+    <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
   </section>
 
   <section class="card" aria-labelledby="st-h">
@@ -291,7 +324,7 @@
 
     <section class="card perf" id="d-perf" aria-labelledby="d-perf-h">
       <div class="perf-main">
-        <h2 id="d-perf-h">累積報酬</h2>
+        <div class="perf-head"><h2 id="d-perf-h">累積報酬</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
         <div class="lead"><span class="lead-v" id="d-lead"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="d-lead-s"></span></div>
         <div class="chart" id="d-chart"><p class="chart-empty" id="d-chart-empty" hidden></p></div>
       </div>
@@ -358,12 +391,14 @@
     return '其他';
   };
   // 各分類一組色系，同組裡再用虛線樣式分開；總績效固定用 --accent
+  // 第一個顏色是各分類的代表色：總績效藍、波段青、當沖橘、隔日沖紫、其他黃，
+  // 這組在深淺兩種底色都跑過色盲和對比檢查（相鄰色差 ≥ 15、對底色 ≥ 3:1）；同分類裡再用深淺和虛線分開
   const HUES = {
-    light: { '波段做多': ['#30b0c7', '#1c7f91', '#5ac8da', '#0e5f6e'], '當沖做空': ['#ff9500', '#d97a00', '#ffbd59', '#a85f00'], '隔日沖': ['#8e8e93', '#48484a', '#aeaeb2'], '其他': ['#a2845e', '#7d6446'] },
-    dark: { '波段做多': ['#40c8e0', '#2aa3b8', '#7fdcec', '#1d8396'], '當沖做空': ['#ff9f0a', '#e08600', '#ffc266', '#b86e00'], '隔日沖': ['#98989d', '#d1d1d6', '#6e6e73'], '其他': ['#ac8e68', '#8c704f'] },
+    light: { '波段做多': ['#0e8fa3', '#005f72', '#249aae', '#007487'], '當沖做空': ['#e8590c', '#c83a00', '#f56521'], '隔日沖': ['#7c5cd6', '#5630a7', '#8667e2'], '其他': ['#8a7400', '#634e00'] },
+    dark: { '波段做多': ['#14a3a8', '#007b80', '#2db0b5', '#008d92'], '當沖做空': ['#d95926', '#c14201', '#e76635'], '隔日沖': ['#9085e9', '#6b5dbd', '#9c91f7'], '其他': ['#c98500', '#9f5e00'] },
   };
   const DASH = ['', '6 4', '2 3', '10 3 2 3'];
-  const dark = window.matchMedia('(prefers-color-scheme: dark)');
+  const themeNow = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
   // 簡稱：去掉分類字和停損參數那段；撞名就用全名
   const shortOf = (name) => name.replace(/^沖空_/, '').replace(/_沖空$/, '').replace(/_隔日沖$/, '').split('_').filter((p) => !/損/.test(p)).join('_') || name;
@@ -457,7 +492,7 @@
       };
     });
     // 線條樣式依策略對照裡的列順序分配：新策略加在最下面，其他策略的顏色不會跟著變
-    const theme = dark.matches ? 'dark' : 'light';
+    const theme = themeNow();
     CATS.concat([...new Set(strat.map((s) => s.cat))].filter((c) => !CATS.includes(c))).forEach((c) => {
       const pal = HUES[theme][c] || HUES[theme]['其他'];
       strat.filter((s) => s.cat === c).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i + Math.floor(i / pal.length)) % DASH.length]; });
@@ -531,6 +566,17 @@
     const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
     add('已實現，'); add(F.int(k.n), 'n'); add(' 趟');
     if (M.dates.length) { add('・' + F.day(M.dates[0]) + ' 到 ' + F.day(M.dates[M.dates.length - 1])); }
+    highLine(s, M.total, M.dates);
+  };
+  // 創新高：累積報酬比之前每一天都高（而且大於 0）的那幾天
+  const highsOf = (v) => { const out = []; let top = 0; v.forEach((x, i) => { if (x > top + 1e-9) { out.push(i); top = x; } }); return out; };
+  const highLine = (box, v, dates) => {
+    const hs = highsOf(v);
+    if (!hs.length) return;
+    const line = el('span', 'hl'), last = hs[hs.length - 1];
+    if (last === v.length - 1) { line.appendChild(el('span', 'hi-tag', '創新高')); line.appendChild(document.createTextNode(' ' + F.day(dates[last]) + ' 收盤')); }
+    else { line.appendChild(document.createTextNode('高點 ')); line.appendChild(el('span', 'n', F.pct(v[last]))); line.appendChild(document.createTextNode('（' + F.day(dates[last]) + '），距高點 ')); line.appendChild(el('span', 'n', F.pct(v[v.length - 1] - v[last]))); }
+    box.appendChild(line);
   };
 
   const renderKpis = () => {
@@ -633,28 +679,42 @@
     const xt = xs.length <= 7 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
     g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
     const line = d3.line().x((d, i) => x(xs[i])).y((d) => y(d));
+    const accent = col('--accent'), surface = col('--surface');
+    // 主線下面淡淡一層，從線往 0 軸漸淡
+    const gid = 'fade-' + box.id;
+    const grad = svg.append('defs').append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
+    grad.append('stop').attr('offset', '0%').attr('stop-color', accent).attr('stop-opacity', 0.22);
+    grad.append('stop').attr('offset', '100%').attr('stop-color', accent).attr('stop-opacity', 0.02);
+    g.append('path').datum(mainV).attr('d', d3.area().x((d, i) => x(xs[i])).y0(y(0)).y1((d) => y(d))).attr('fill', `url(#${gid})`);
     lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
-    g.append('path').datum(mainV).attr('d', line).attr('fill', 'none').attr('stroke', col('--accent')).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+    g.append('path').datum(mainV).attr('d', line).attr('fill', 'none').attr('stroke', accent).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+    // 創新高的每一天在主線上加一個點（外圈用卡片底色，壓在線上也看得出來）
+    const highs = highsOf(o.main.v).map((i) => i + 1);
+    const isHigh = new Set(highs);
+    g.append('g').attr('class', 'highs').selectAll('circle').data(highs).join('circle')
+      .attr('cx', (i) => x(xs[i])).attr('cy', (i) => y(mainV[i])).attr('r', 4.5).attr('fill', accent).attr('stroke', surface).attr('stroke-width', 2);
     const lx = x(xs[xs.length - 1]), ly = y(endV);
-    g.append('circle').attr('cx', lx).attr('cy', ly).attr('r', 4).attr('fill', col('--accent'));
-    g.append('text').attr('x', lx + 8).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
+    g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
+    svg.attr('aria-label', `${o.label}。最新 ${endText}${highs.length ? `，創新高 ${highs.length} 次，最近一次 ${F.day(o.dates[highs[highs.length - 1] - 1])}` : ''}。可以用左右鍵逐日查看。`);
 
-    // 滑過去（手機點一下）看那一天每條線的數字
-    const tip = d3.select(box).append('div').attr('class', 'tip').style('display', 'none');
+    // 滑過去（手機點一下、鍵盤左右鍵）看那一天每條線的數字
+    const tip = d3.select(box).append('div').attr('class', 'tip').attr('aria-live', 'polite').style('display', 'none');
     const rule = g.append('line').attr('y1', 8).attr('y2', H - 26).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
     const dots = g.append('g').style('display', 'none');
     const bis = d3.bisector((d) => d).center;
-    const move = (ev) => {
-      const [px] = d3.pointer(ev, svg.node());
-      const i = Math.max(1, bis(xs, x.invert(px)));
+    let at = null;
+    const show = (i) => {
+      at = i;
       const xi = x(xs[i]);
       rule.style('display', null).attr('x1', xi).attr('x2', xi);
       dots.style('display', null).selectAll('*').remove();
-      [...lines.map((l) => ({ c: l.color, v: l.v[i] })), { c: col('--accent'), v: mainV[i] }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', 3.5).attr('fill', p.c));
+      [...lines.map((l) => ({ c: l.color, v: l.v[i], r: 3.5 })), { c: accent, v: mainV[i], r: 5 }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', p.r).attr('fill', p.c).attr('stroke', surface).attr('stroke-width', 2));
       tip.style('display', null).selectAll('*').remove();
-      tip.append('div').attr('class', 'd').text(F.day(o.dates[i - 1]) + ' 收盤後');
+      const hd = tip.append('div').attr('class', 'd');
+      hd.append('span').text(F.day(o.dates[i - 1]) + ' 收盤後');
+      if (isHigh.has(i)) hd.append('span').attr('class', 'hi-tag').text('創新高');
       const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
-      row(swatch(col('--accent'), '', 3), o.main.name, mainV[i], 'tot');
+      row(swatch(accent, '', 3), o.main.name, mainV[i], 'tot');
       lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.color, l.dash), l.short, l.v[i]));
       if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(i - 1));
       const bw = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
@@ -662,9 +722,17 @@
       let left = xi * scale + 14; if (left + tw > bw) left = xi * scale - tw - 14;
       tip.style('left', Math.max(0, left) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
     };
-    const hide = () => { tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
-    svg.style('touch-action', 'pan-y');
+    const move = (ev) => { const [px] = d3.pointer(ev, svg.node()); show(Math.max(1, bis(xs, x.invert(px)))); };
+    const hide = () => { at = null; tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
+    svg.attr('tabindex', 0).style('touch-action', 'pan-y');
     svg.on('pointermove', move).on('pointerdown', move).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') hide(); });
+    svg.on('focus', () => show(at || xs.length - 1)).on('blur', hide);
+    svg.on('keydown', (ev) => {
+      const last = xs.length - 1;
+      const next = { ArrowLeft: (at || last) - 1, ArrowRight: (at || last) + 1, Home: 1, End: last }[ev.key];
+      if (next != null) { ev.preventDefault(); show(Math.max(1, Math.min(last, next))); }
+      else if (ev.key === 'Escape' && at != null) { ev.preventDefault(); hide(); }
+    });
     hiders.set(box.id, hide);
   };
 
@@ -866,7 +934,8 @@
     row('未實現損益', pos.length ? F.money(unr) : '—', pos.length ? F.tone(unr) : '', pos.length ? '元' : '');
 
     let c = 0; const cum = dts.map((d) => (c += byDay.get(d).r));
-    dChart = () => plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } });
+    highLine(ls, cum, dts);
+    dChart =() => plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } });
     dChart();
 
     // 目前持倉：沒有就整張卡收起來（上面那句話已經說了）
@@ -1060,7 +1129,14 @@
   $('reload').addEventListener('click', refresh);
   $('retry').addEventListener('click', refresh);
   let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => { if (!M) return; if (cur) dChart(); else renderChart(); }, 150); });
-  dark.addEventListener('change', () => D && renderAll());
+  // 深淺色切換：預設深色，點過就記在這台裝置
+  const themeBtn = () => { const t = themeNow() === 'light' ? '切換成深色' : '切換成淺色'; $('theme').setAttribute('aria-label', t); $('theme').title = t; };
+  $('theme').addEventListener('click', () => {
+    const t = themeNow() === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t; store.set('qtw-theme', t); themeBtn();
+    if (D) renderAll();
+  });
+  themeBtn();
   setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 5 * 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && D) refresh(); });
   route();
