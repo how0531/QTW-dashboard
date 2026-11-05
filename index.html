@@ -27,7 +27,7 @@
     --border: #1e293b; --rule: #162036; --control: #334155;
     --text: #f8fafc; --muted: #94a3b8; --faint: #7c8ba1;
     --accent: #3b82f6; --accent-soft: rgba(59,130,246,.14); --link: #60a5fa;
-    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155;
+    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155; --peak: #deb06c;
     --ok-bg: rgba(74,222,128,.12); --ok: #4ade80; --bad-bg: rgba(248,113,113,.14); --bad: #fca5a5;
     --tip-shadow: 0 8px 24px rgba(0,0,0,.5);
     --font: "Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
@@ -40,7 +40,7 @@
     --border: #e2e8f0; --rule: #eef2f6; --control: #cbd5e1;
     --text: #0f172a; --muted: #475569; --faint: #64748b;
     --accent: #2563eb; --accent-soft: rgba(37,99,235,.10); --link: #1d4ed8;
-    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff;
+    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff; --peak: #a87a22;
     --ok-bg: #dcfce7; --ok: #166534; --bad-bg: #fee2e2; --bad: #991b1b;
     --tip-shadow: 0 8px 24px rgba(15,23,42,.12);
     color-scheme: light;
@@ -111,9 +111,14 @@
   /* 總績效：左圖右開關 */
   .perf { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); }
   .perf-main { padding: 14px var(--pad) 10px; min-width: 0; display: flex; flex-direction: column; }
-  .perf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+  .perf-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: 32px; }
+  .perf-sub { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin-top: 4px; }
+  .perf-sub .meta .n { color: var(--text); font-weight: 600; } .perf-sub .meta .n.down { color: var(--down); }
+  .legends { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
+  .seg-sm button { min-width: 0; height: 28px; padding: 0 10px; font-size: 12px; }
+  .tip .r.sub, .tip .r.dd { color: var(--muted); }
   .perf-side { border-left: 1px solid var(--border); padding: 14px 12px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-  .chart { position: relative; margin-top: 10px; flex: 1 1 auto; min-height: 320px; }
+  .chart { position: relative; margin-top: 10px; flex: 1 1 auto; min-height: 360px; }
   .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
   .chart svg:focus-visible { outline: 2px solid var(--link); outline-offset: 4px; border-radius: 4px; }
   .chart.short { flex: none; height: 200px; min-height: 0; }
@@ -246,7 +251,7 @@
   }
   @media (max-width: 980px) {
     .perf { grid-template-columns: 1fr; }
-    .chart { flex: none; height: 300px; min-height: 0; }
+    .chart { flex: none; height: 340px; min-height: 0; }
     .perf-side { border-left: 0; border-top: 1px solid var(--border); }
     .two-col { grid-template-columns: 1fr; }
   }
@@ -260,7 +265,7 @@
     .fresh { font-size: 12px; gap: 6px; }
     .fresh .btn .lbl { display: none; }
     .fresh #reload { width: var(--hit); padding: 0; justify-content: center; }
-    .chart { height: 240px; }
+    .chart { height: 300px; }
     .chart.short { height: 200px; }
     .cal-grid { gap: 3px; padding-top: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .cal-d { min-height: 54px; padding: 6px 5px; border-radius: 6px; }
@@ -323,7 +328,8 @@
 
   <section class="card perf" aria-labelledby="perf-h">
     <div class="perf-main">
-      <div class="perf-head"><h2 id="perf-h">總績效走勢</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+      <div class="perf-head"><h2 id="perf-h">總績效走勢</h2><div class="seg seg-sm" id="range" role="group" aria-label="期間" hidden><button type="button" data-r="all" aria-pressed="true">全部</button><button type="button" data-r="1m" aria-pressed="false">近一月</button><button type="button" data-r="3m" aria-pressed="false">近三月</button><button type="button" data-r="ytd" aria-pressed="false">今年</button></div></div>
+      <div class="perf-sub"><span class="meta" id="perf-meta"></span><span class="legends" aria-hidden="true"><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="var(--peak)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="4" height="8" rx="1" fill="var(--up)" fill-opacity=".6"/><rect x="7" y="6" width="4" height="4" rx="1" fill="var(--down)" fill-opacity=".6"/></svg>每日報酬</span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 3h10v3l-4 3H1Z" fill="var(--down)" fill-opacity=".35" stroke="var(--down)" stroke-width="1"/></svg>回撤</span></span></div>
       <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
     </div>
     <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
@@ -389,8 +395,9 @@
 
     <section class="card perf" id="d-perf" aria-labelledby="d-perf-h">
       <div class="perf-main">
-        <div class="perf-head"><h2 id="d-perf-h">累積報酬</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+        <div class="perf-head"><h2 id="d-perf-h">累積報酬</h2><span class="legends" aria-hidden="true"><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="var(--peak)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="4" height="8" rx="1" fill="var(--up)" fill-opacity=".6"/><rect x="7" y="6" width="4" height="4" rx="1" fill="var(--down)" fill-opacity=".6"/></svg>每日報酬</span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 3h10v3l-4 3H1Z" fill="var(--down)" fill-opacity=".35" stroke="var(--down)" stroke-width="1"/></svg>回撤</span></span></div>
         <div class="lead"><span class="lead-v" id="d-lead"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="d-lead-s"></span></div>
+        <div class="perf-sub"><span class="meta" id="d-perf-meta"></span></div>
         <div class="chart" id="d-chart"><p class="chart-empty" id="d-chart-empty" hidden></p></div>
       </div>
       <dl class="perf-side kv" id="d-kv"></dl>
@@ -706,11 +713,13 @@
   };
 
   // ---- 走勢圖：一條粗的主線（總績效或單一策略），可以再疊細線 ----
+  // 參考 TradeTrack-Pro：階梯線（已實現報酬只在出場那天變動）、金色創新高點、
+  // 每天的報酬柱（和線同一個 % 軸）、下方回撤圖（離最高點差多少）
   const hiders = new Map();
   const plot = (box, empty, o) => {
     if (!box.clientWidth) return;  // 這一層沒顯示時不畫，切回來再畫
     box.querySelectorAll('svg, .tip').forEach((n) => n.remove());
-    if (!o.dates.length) { empty.hidden = false; empty.textContent = o.emptyText; box.classList.remove('short'); return; }
+    if (!o.dates.length) { empty.hidden = false; empty.textContent = o.emptyText; box.classList.remove('short'); return null; }
     empty.hidden = true;
     box.classList.toggle('short', o.dates.length < 3);
     const css = getComputedStyle(document.documentElement);
@@ -718,74 +727,127 @@
     const W = Math.max(280, box.clientWidth), H = box.clientHeight || 300;
     // 起點放在第一個出場日的前一天，從 0 開始
     const t0 = d3.utcDay.offset(new Date(o.dates[0] + 'T00:00:00Z'), -1);
-    const xs = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
-    const lines = (o.lines || []).map((l) => ({ ...l, v: [0, ...l.v] }));
-    const mainV = [0, ...o.main.v];
-    const all = [mainV, ...lines.map((l) => l.v)].flat();
+    const XS = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
+    const MV = [0, ...o.main.v];
+    // 創新高和回撤一律用全部歷史算，切期間也不會變
+    const HI = new Set(highsOf(o.main.v).map((i) => i + 1));
+    let top = 0; const DD = MV.map((v) => { top = Math.max(top, v); return v - top; });
+    const DAY = MV.map((v, i) => (i ? v - MV[i - 1] : 0));
+    // 期間：從 o.from 那天開始，前一個點留著當起點
+    let s0 = 0;
+    if (o.from) { const k = o.dates.findIndex((d) => d >= o.from); s0 = k <= 0 ? 0 : k; }
+    const cut = (a) => a.slice(s0);
+    const xs = cut(XS), mainV = cut(MV), dd = cut(DD), day = cut(DAY);
+    const lines = (o.lines || []).map((l) => ({ ...l, v: cut([0, ...l.v]) }));
+    // 起點放在期間開始的前一天（那時的數字就是前一個點的數字），不要拉回很久以前的出場日
+    if (s0 > 0) { const f = d3.utcDay.offset(new Date(o.from + 'T00:00:00Z'), -1); if (f > xs[0]) xs[0] = f; }
+    const full = (i) => i + s0;  // 畫面上的第 i 點 → 全部資料的第幾點
+
+    const ddH = H >= 260 ? Math.round(Math.min(72, H * 0.18)) : 0;
+    const axisY = H - 26, mainBottom = axisY - (ddH ? ddH + 12 : 0);
+    const all = [mainV, ...lines.map((l) => l.v), day.slice(1)].flat();
     let lo = Math.min(0, d3.min(all)), hi = Math.max(0, d3.max(all));
     if (hi - lo < 0.01) { hi += 0.005; lo -= 0.005; }
-    const y = d3.scaleLinear([lo, hi], [H - 26, 8]).nice(5);
+    const y = d3.scaleLinear([lo, hi], [mainBottom, 8]).nice(5);
     const ticks = y.ticks(5);
     const step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 0.01;
     const fy = (v) => (v === 0 ? '0%' : (v > 0 ? '' : MINUS) + Math.abs(v * 100).toFixed(step < 0.01 ? 1 : 0) + '%');
-    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', o.label);
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
     const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--num)');
     let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
+    if (ddH) [ '回撤', pct1(Math.min(0, d3.min(DD))) ].forEach((t) => { probe.text(t); left = Math.max(left, probe.node().getComputedTextLength()); });
     const endV = mainV[mainV.length - 1];
     const endText = F.pct(endV);
     probe.text(endText); const endW = probe.node().getComputedTextLength(); probe.remove();
     const m = { l: left + 10, r: endW + 14 };
-    const x = d3.scaleUtc(d3.extent(xs), [m.l, W - m.r]);
+    // 階梯線最後一天要有寬度才看得到，右邊多留一小段（至少一天，或整段的 3%）
+    const xEnd = d3.utcDay.offset(xs[xs.length - 1], Math.max(1, Math.round((xs[xs.length - 1] - xs[0]) / 864e5 * 0.03)));
+    const xsP = [...xs, xEnd], ext = (a) => [...a, a[a.length - 1]];
+    const x = d3.scaleUtc([xs[0], xEnd], [m.l, W - m.r]);
+    const accent = col('--accent'), surface = col('--surface'), peak = col('--peak'), up = col('--up'), down = col('--down');
+    const defs = svg.append('defs');
     const g = svg.append('g').style('font-family', 'var(--num)').attr('font-size', 12);
     g.selectAll('line.gl').data(ticks).join('line').attr('class', 'gl').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y)
-      .attr('stroke', (t) => (t === 0 ? col('--faint') : col('--grid'))).attr('stroke-width', 1);
+      .attr('stroke', (t) => (t === 0 ? col('--zero') : col('--grid'))).attr('stroke-width', 1);
     g.selectAll('text.yt').data(ticks).join('text').attr('class', 'yt').attr('x', m.l - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', col('--muted')).text(fy);
     const span = (W - m.l - m.r);
-    const xt = xs.length <= 7 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
+    const xt = xs.length <= 8 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
     g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
-    const line = d3.line().x((d, i) => x(xs[i])).y((d) => y(d));
-    const accent = col('--accent'), surface = col('--surface');
+
+    // 每天的報酬柱：紅賺綠賠，淡淡的放在線後面
+    const gap = d3.min(xsP.slice(1).map((t, i) => x(t) - x(xsP[i]))) || span;
+    const bw = Math.max(3, Math.min(14, gap * 0.5));
+    g.append('g').attr('class', 'bars').selectAll('rect').data(day.map((v, i) => ({ v, i })).filter((d) => d.i > 0 && d.v !== 0)).join('rect')
+      .attr('x', (d) => x(xs[d.i]) + 2).attr('width', bw)
+      .attr('y', (d) => Math.min(y(0), y(d.v))).attr('height', (d) => Math.max(1, Math.abs(y(d.v) - y(0))))
+      .attr('rx', Math.min(2, bw / 3)).attr('fill', (d) => (d.v > 0 ? up : down)).attr('fill-opacity', 0.38);
+
+    const line = d3.line().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y((d) => y(d));
     // 主線下面淡淡一層，從線往 0 軸漸淡
     const gid = 'fade-' + box.id;
-    const grad = svg.append('defs').append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
-    grad.append('stop').attr('offset', '0%').attr('stop-color', accent).attr('stop-opacity', 0.22);
+    const grad = defs.append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
+    grad.append('stop').attr('offset', '0%').attr('stop-color', accent).attr('stop-opacity', 0.2);
     grad.append('stop').attr('offset', '100%').attr('stop-color', accent).attr('stop-opacity', 0.02);
-    g.append('path').datum(mainV).attr('d', d3.area().x((d, i) => x(xs[i])).y0(y(0)).y1((d) => y(d))).attr('fill', `url(#${gid})`);
-    lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
-    g.append('path').datum(mainV).attr('d', line).attr('fill', 'none').attr('stroke', accent).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
-    // 創新高的每一天在主線上加一個點（外圈用卡片底色，壓在線上也看得出來）
-    const highs = highsOf(o.main.v).map((i) => i + 1);
-    const isHigh = new Set(highs);
+    g.append('path').datum(ext(mainV)).attr('d', d3.area().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y0(y(0)).y1((d) => y(d))).attr('fill', `url(#${gid})`);
+    lines.forEach((l) => g.append('path').datum(ext(l.v)).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
+    // 深色底時主線加一點光暈
+    let glow = null;
+    if (themeNow() === 'dark') {
+      glow = 'glow-' + box.id;
+      const f = defs.append('filter').attr('id', glow).attr('x', '-5%').attr('y', '-20%').attr('width', '110%').attr('height', '140%');
+      f.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', 3).attr('result', 'b');
+      const mg = f.append('feMerge'); mg.append('feMergeNode').attr('in', 'b'); mg.append('feMergeNode').attr('in', 'SourceGraphic');
+    }
+    g.append('path').datum(ext(mainV)).attr('d', line).attr('fill', 'none').attr('stroke', accent).attr('stroke-width', 2.5).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('filter', glow ? `url(#${glow})` : null);
+    // 創新高的每一天在主線上加一個金色的點（外圈用卡片底色，壓在線上也看得出來）
+    const highs = mainV.map((v, i) => i).filter((i) => HI.has(full(i)));
     g.append('g').attr('class', 'highs').selectAll('circle').data(highs).join('circle')
-      .attr('cx', (i) => x(xs[i])).attr('cy', (i) => y(mainV[i])).attr('r', 4.5).attr('fill', accent).attr('stroke', surface).attr('stroke-width', 2);
-    const lx = x(xs[xs.length - 1]), ly = y(endV);
-    g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
-    svg.attr('aria-label', `${o.label}。最新 ${endText}${highs.length ? `，創新高 ${highs.length} 次，最近一次 ${F.day(o.dates[highs[highs.length - 1] - 1])}` : ''}。可以用左右鍵逐日查看。`);
+      .attr('cx', (i) => x(xs[i])).attr('cy', (i) => y(mainV[i])).attr('r', 4.5).attr('fill', peak).attr('stroke', surface).attr('stroke-width', 2);
+    const lx = x(xEnd), ly = y(endV);
+    g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? up : endV < 0 ? down : col('--text')).text(endText);
+
+    // 下方回撤圖：0 在上面，往下是離最高點跌了多少
+    const minDD = d3.min(DD);
+    if (ddH) {
+      const yd = d3.scaleLinear([Math.min(minDD, -0.01), 0], [axisY - 2, axisY - ddH]);
+      const dg = g.append('g').attr('class', 'dd');
+      dg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', yd(0)).attr('y2', yd(0)).attr('stroke', col('--zero')).attr('stroke-width', 1);
+      dg.append('path').datum(ext(dd)).attr('d', d3.area().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y0(yd(0)).y1((d) => yd(d))).attr('fill', down).attr('fill-opacity', 0.28);
+      dg.append('path').datum(ext(dd)).attr('d', d3.line().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y((d) => yd(d))).attr('fill', 'none').attr('stroke', down).attr('stroke-width', 1.5).attr('stroke-opacity', 0.9);
+      dg.append('text').attr('x', m.l - 8).attr('y', yd(0) + 12).attr('text-anchor', 'end').attr('font-size', 11).style('font-family', 'var(--font)').attr('fill', col('--muted')).text('回撤');
+      if (minDD < 0) dg.append('text').attr('x', m.l - 8).attr('y', axisY - 4).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', col('--muted')).text(pct1(minDD));
+    }
+    // 最近一次創新高離現在幾個出場日
+    const lastHi = [...HI].pop();
+    const stats = { maxDD: minDD, nowDD: DD[DD.length - 1], lastHigh: lastHi ? o.dates[lastHi - 1] : null, atHigh: lastHi === MV.length - 1, highs: HI.size };
+    svg.attr('aria-label', `${o.label}。最新 ${endText}${HI.size ? `，創新高 ${HI.size} 次，最近一次 ${F.day(stats.lastHigh)}` : ''}${minDD < 0 ? `，最大回撤 ${F.pct(minDD)}` : ''}。可以用左右鍵逐日查看。`);
 
     // 滑過去（手機點一下、鍵盤左右鍵）看那一天每條線的數字
     const tip = d3.select(box).append('div').attr('class', 'tip').attr('aria-live', 'polite').style('display', 'none');
-    const rule = g.append('line').attr('y1', 8).attr('y2', H - 26).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
+    const rule = g.append('line').attr('y1', 8).attr('y2', axisY).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
     const dots = g.append('g').style('display', 'none');
     const bis = d3.bisector((d) => d).center;
     let at = null;
     const show = (i) => {
       at = i;
-      const xi = x(xs[i]);
+      const xi = x(xs[i]), fi = full(i);
       rule.style('display', null).attr('x1', xi).attr('x2', xi);
       dots.style('display', null).selectAll('*').remove();
-      [...lines.map((l) => ({ c: l.color, v: l.v[i], r: 3.5 })), { c: accent, v: mainV[i], r: 5 }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', p.r).attr('fill', p.c).attr('stroke', surface).attr('stroke-width', 2));
+      [...lines.map((l) => ({ c: l.color, v: l.v[i], r: 3.5 })), { c: HI.has(fi) ? peak : accent, v: mainV[i], r: 5 }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', p.r).attr('fill', p.c).attr('stroke', surface).attr('stroke-width', 2));
       tip.style('display', null).selectAll('*').remove();
       const hd = tip.append('div').attr('class', 'd');
-      hd.append('span').text(F.day(o.dates[i - 1]) + ' 收盤後');
-      if (isHigh.has(i)) hd.append('span').attr('class', 'hi-tag').text('創新高');
+      hd.append('span').text(F.day(o.dates[fi - 1]) + ' 收盤後');
+      if (HI.has(fi)) hd.append('span').attr('class', 'hi-tag').text('創新高');
       const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
       row(swatch(accent, '', 3), o.main.name, mainV[i], 'tot');
+      row(blank(), '當天', day[i], 'sub');
       lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.color, l.dash), l.short, l.v[i]));
-      if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(i - 1));
-      const bw = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
-      const scale = bw / W;
-      let left = xi * scale + 14; if (left + tw > bw) left = xi * scale - tw - 14;
-      tip.style('left', Math.max(0, left) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
+      if (!HI.has(fi) && dd[i] < 0) { const r = tip.append('div').attr('class', 'r dd'); r.append('span'); r.append('span').text('距高點'); r.append('span').attr('class', 'n down').text(F.pct(dd[i])); }
+      if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(fi - 1));
+      const bwid = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+      const scale = bwid / W;
+      let lft = xi * scale + 14; if (lft + tw > bwid) lft = xi * scale - tw - 14;
+      tip.style('left', Math.max(0, lft) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
     };
     const move = (ev) => { const [px] = d3.pointer(ev, svg.node()); show(Math.max(1, bis(xs, x.invert(px)))); };
     const hide = () => { at = null; tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
@@ -799,12 +861,43 @@
       else if (ev.key === 'Escape' && at != null) { ev.preventDefault(); hide(); }
     });
     hiders.set(box.id, hide);
+    return stats;
+  };
+  // 圖上方那行：最大回撤、上次創新高
+  const perfMeta = (el_, st) => {
+    el_.replaceChildren();
+    if (!st) return;
+    const add = (t, cls) => el_.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    add('最大回撤 '); add(st.maxDD < 0 ? F.pct(st.maxDD) : '0.00%', 'n' + (st.maxDD < 0 ? ' down' : ''));
+    if (st.lastHigh) { add('・'); if (st.atHigh) add('現在就在最高點', 'n'); else { add('上次創新高 ' + F.day(st.lastHigh) + '，距高點 '); add(F.pct(st.nowDD), 'n down'); } }
+  };
+
+  // 期間：資料比那段期間長才出現那個按鈕（只有兩週資料時整排不顯示）
+  let range = 'all';
+  const rangeFrom = (r) => {
+    if (r === 'all' || !M.dates.length) return null;
+    const last = new Date(M.dates[M.dates.length - 1] + 'T00:00:00Z');
+    const d = r === 'ytd' ? new Date(Date.UTC(last.getUTCFullYear(), 0, 1)) : d3.utcMonth.offset(last, r === '1m' ? -1 : -3);
+    return d.toISOString().slice(0, 10);
+  };
+  const renderRange = () => {
+    const seg = $('range'); let any = false;
+    seg.querySelectorAll('button').forEach((b) => {
+      const r = b.dataset.r, f = rangeFrom(r);
+      const useful = r === 'all' || (f && M.dates.length && M.dates[0] < f);
+      b.hidden = !useful; if (useful && r !== 'all') any = true;
+      b.setAttribute('aria-pressed', String(r === range));
+    });
+    if (!any) range = 'all';
+    seg.hidden = !any;
   };
 
   const renderChart = () => {
     const lines = [];
     ordered().forEach(({ items }) => items.forEach((s) => { if (M.series.has(s.name) && !hidden.has(s.name)) lines.push({ color: s.color, dash: s.dash, short: s.short, v: M.series.get(s.name) }); }));
-    plot($('chart'), $('chart-empty'), { dates: M.dates, main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
+    renderRange();
+    const st = plot($('chart'), $('chart-empty'), { dates: M.dates, from: rangeFrom(range), main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
+    perfMeta($('perf-meta'), st);
   };
 
   // ---- 獲利日曆：每天＝當天出場各趟 return_pct 加總（和走勢圖每天的漲跌一樣） ----
@@ -1092,7 +1185,7 @@
 
     let c = 0; const cum = dts.map((d) => (c += byDay.get(d).r));
     highLine(ls, cum, dts);
-    dChart =() => plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } });
+    dChart = () => perfMeta($('d-perf-meta'), plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } }));
     dChart();
 
     // 目前持倉：沒有就整張卡收起來（上面那句話已經說了）
@@ -1285,6 +1378,7 @@
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   // 獲利日曆：切月份、滑過或點格子看當天明細
   const calGo = (k) => { calPinned = true; calMonth = monthAdd(calMonth, k); calHide(); renderCalendar(); };
+  $('range').addEventListener('click', (ev) => { const b = ev.target.closest('button[data-r]'); if (!b || b.dataset.r === range) return; range = b.dataset.r; renderChart(); });
   $('cal-prev').addEventListener('click', () => calGo(-1));
   $('cal-next').addEventListener('click', () => calGo(1));
   const cg = $('cal-grid');
