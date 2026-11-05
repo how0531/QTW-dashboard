@@ -125,6 +125,46 @@
   .tip .tot { font-weight: 600; }
   .hi-tag { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--link); font-weight: 600; font-size: 11px; line-height: 18px; }
 
+  /* 獲利日曆：週一到週五＋週合計，紅賺綠賠，底色深淺代表幅度，數字本身用文字色、正負號說明方向 */
+  .cal { position: relative; }
+  .cal-head { align-items: center; }
+  .cal-nav { display: flex; align-items: center; gap: 4px; }
+  .cal-nav .btn:disabled { opacity: .35; cursor: default; }
+  .cal-nav .btn:disabled:hover { background: var(--surface); border-color: var(--border); }
+  .cal-m { min-width: 7.5em; text-align: center; font-size: 14px; font-weight: 600; }
+  .cal-sum { margin: 4px var(--pad) 0; font-size: 13px; color: var(--muted); }
+  .cal-sum .n { color: var(--text); font-weight: 600; }
+  .cal-sum .n.up { color: var(--up); } .cal-sum .n.down { color: var(--down); }
+  .cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, .85fr); gap: 4px; padding: 12px var(--pad) 8px; }
+  .cal-wd { font-size: 12px; color: var(--muted); text-align: center; padding-bottom: 2px; letter-spacing: .02em; }
+  .cal-d { position: relative; min-height: 76px; min-width: 0; border: 0; border-radius: 8px; padding: 8px 10px; background: var(--raised); color: var(--text); display: flex; flex-direction: column; justify-content: space-between; gap: 2px; text-align: left; font: inherit; }
+  .cal-d.empty { background: transparent; }
+  .cal-d.future, .cal-d.pre { opacity: .4; }
+  .cal-d .dn { font-family: var(--num); font-size: 12px; color: var(--muted); line-height: 1.2; }
+  .cal-d.today .dn { color: var(--link); font-weight: 700; }
+  .cal-d .pv { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2; }
+  .cal-d .pv .s { display: none; }
+  .cal-d .ps { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+  button.cal-d { cursor: pointer; }
+  button.cal-d:hover, button.cal-d.on { box-shadow: inset 0 0 0 1px var(--control); }
+  .cal-d.wk { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
+  .cal-d.wk .dn { font-family: var(--font); }
+  .cal-d.tint .dn, .cal-d.tint .ps { color: color-mix(in srgb, var(--text) 72%, transparent); }
+  .r1 { background: color-mix(in srgb, var(--up) 14%, var(--surface)) !important; }
+  .r2 { background: color-mix(in srgb, var(--up) 24%, var(--surface)) !important; }
+  .r3 { background: color-mix(in srgb, var(--up) 36%, var(--surface)) !important; }
+  .r4 { background: color-mix(in srgb, var(--up) 50%, var(--surface)) !important; }
+  .g1 { background: color-mix(in srgb, var(--down) 14%, var(--surface)) !important; }
+  .g2 { background: color-mix(in srgb, var(--down) 24%, var(--surface)) !important; }
+  .g3 { background: color-mix(in srgb, var(--down) 36%, var(--surface)) !important; }
+  .g4 { background: color-mix(in srgb, var(--down) 50%, var(--surface)) !important; }
+  .flat { background: var(--active) !important; }
+  .cal-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; padding: 0 var(--pad) 14px; }
+  .cal-legend { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); }
+  .cal-sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+  .cal-sw.g1 { margin-right: 4px; } .cal-sw.g4 { margin-left: 4px; } .cal-sw.r4 { margin-right: 4px; }
+  .cal .tip { min-width: 190px; }
+
   .grp { display: flex; flex-direction: column; gap: 1px; }
   .grp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0 8px; min-height: 32px; cursor: pointer; text-align: left; font-size: 12px; color: var(--muted); letter-spacing: .02em; border-radius: 6px; }
   .grp-h:hover { color: var(--text); background: var(--raised); }
@@ -222,6 +262,14 @@
     .fresh #reload { width: var(--hit); padding: 0; justify-content: center; }
     .chart { height: 240px; }
     .chart.short { height: 200px; }
+    .cal-grid { gap: 3px; padding-top: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .cal-d { min-height: 54px; padding: 6px 5px; border-radius: 6px; }
+    .cal-d .dn { font-size: 11px; }
+    .cal-d .pv { font-size: 12px; letter-spacing: -0.03em; }
+    .cal-d .pv .l { display: none; }
+    .cal-d .pv .s { display: inline; }
+    .cal-d .ps { display: none; }
+    .cal-m { min-width: 6.5em; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi:nth-child(n) { border-left: 0; border-top: 0; }
     .kpi-lead { grid-column: 1 / -1; border-radius: var(--radius) var(--radius) 0 0; }
@@ -279,6 +327,23 @@
       <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
     </div>
     <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
+  </section>
+
+  <section class="card cal" aria-labelledby="cal-h">
+    <div class="card-h cal-head">
+      <h2 id="cal-h">獲利日曆</h2>
+      <div class="cal-nav">
+        <button class="btn icon-btn" id="cal-prev" type="button" aria-label="上個月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <span class="cal-m" id="cal-m" aria-live="polite">—</span>
+        <button class="btn icon-btn" id="cal-next" type="button" aria-label="下個月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    <p class="cal-sum" id="cal-sum"><span class="skel" style="width:16em"></span></p>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-foot">
+      <span class="cal-legend" aria-hidden="true">賠<i class="cal-sw g4"></i><i class="cal-sw g3"></i><i class="cal-sw g2"></i><i class="cal-sw g1"></i><i class="cal-sw r1"></i><i class="cal-sw r2"></i><i class="cal-sw r3"></i><i class="cal-sw r4"></i>賺</span>
+      <span class="meta">每格＝當天出場各趟報酬加總（已實現、扣手續費和稅）。顏色深淺分 1%、5%、10% 四級。</span>
+    </div>
   </section>
 
   <section class="card" aria-labelledby="st-h">
@@ -742,6 +807,98 @@
     plot($('chart'), $('chart-empty'), { dates: M.dates, main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
   };
 
+  // ---- 獲利日曆：每天＝當天出場各趟 return_pct 加總（和走勢圖每天的漲跌一樣） ----
+  let calMonth = null, calPinned = false;
+  const WD = '日一二三四五六';
+  const pct1 = (v) => (v > 0 ? '+' : v < 0 ? MINUS : '') + Math.abs(v * 100).toFixed(1) + '%';
+  const tintOf = (v) => { if (v == null) return ''; if (Math.abs(v) < 5e-7) return 'flat'; const a = Math.abs(v); return (v > 0 ? 'r' : 'g') + (a < 0.01 ? 1 : a < 0.05 ? 2 : a < 0.10 ? 3 : 4); };
+  const monthAdd = (ym, k) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + k, 1)); return d.toISOString().slice(0, 7); };
+  const renderCalendar = () => {
+    const today = new Date(Date.now() + TPE).toISOString().slice(0, 10);
+    const days = d3.rollup(M.trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, p: d3.sum(v, (t) => t.net_pnl || 0), by: d3.rollups(v, (w) => d3.sum(w, (t) => t.return_pct || 0), (t) => t.strategy) }), (t) => t.d);
+    const lastData = M.dates.length ? M.dates[M.dates.length - 1].slice(0, 7) : today.slice(0, 7);
+    const lo = M.dates.length ? M.dates[0].slice(0, 7) : today.slice(0, 7);
+    const hi = today.slice(0, 7) > lastData ? today.slice(0, 7) : lastData;
+    // 預設看最近有出場的那個月；使用者自己切過就停在他選的月份
+    if (!calPinned || !calMonth || calMonth < lo || calMonth > hi) calMonth = lastData;
+    const [y, m] = calMonth.split('-').map(Number);
+    $('cal-m').textContent = y + ' 年 ' + m + ' 月';
+    $('cal-prev').disabled = calMonth <= lo; $('cal-next').disabled = calMonth >= hi;
+
+    const grid = $('cal-grid'); grid.replaceChildren();
+    ['一', '二', '三', '四', '五', '週合計'].forEach((w) => grid.appendChild(el('div', 'cal-wd', w)));
+    const rows = []; let row = null;
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    for (let d = 1; d <= dim; d++) {
+      const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+      if (wd === 0 || wd === 6) continue;
+      if (!row || wd === 1) { row = [null, null, null, null, null]; rows.push(row); }
+      row[wd - 1] = calMonth + '-' + String(d).padStart(2, '0');
+    }
+    const value = (cell, v, n, p) => {
+      const pv = el('span', 'pv'); pv.appendChild(el('span', 'l', F.pct(v))); pv.appendChild(el('span', 's', pct1(v))); cell.appendChild(pv);
+      cell.appendChild(el('span', 'ps', n + ' 趟・' + F.money(p)));
+    };
+    rows.forEach((r) => {
+      let wr = 0, wn = 0, wp = 0;
+      r.forEach((iso) => {
+        if (!iso) { grid.appendChild(el('div', 'cal-d empty')); return; }
+        const o = days.get(iso), dn = String(Number(iso.slice(8)));
+        // 開始有實盤紀錄之前、和今天之後的日子變淡
+        const cls = 'cal-d' + (iso > today ? ' future' : '') + (M.dates.length && iso < M.dates[0] ? ' pre' : '') + (iso === today ? ' today' : '');
+        if (!o) { const c = el('div', cls); c.appendChild(el('span', 'dn', dn)); grid.appendChild(c); return; }
+        wr += o.r; wn += o.n; wp += o.p;
+        const c = el('button', cls + ' tint ' + tintOf(o.r)); c.type = 'button'; c.dataset.day = iso;
+        c.setAttribute('aria-label', `${F.day(iso)}（${WD[new Date(iso + 'T00:00:00Z').getUTCDay()]}）${F.pct(o.r)}，${o.n} 趟，淨 ${F.money(o.p)} 元`);
+        c.appendChild(el('span', 'dn', dn)); value(c, o.r, o.n, o.p);
+        grid.appendChild(c);
+      });
+      const wFirst = r.find(Boolean), wLast = r.filter(Boolean).pop();
+      const w = el('div', 'cal-d wk' + (wn ? ' tint ' + tintOf(wr) : wFirst > today ? ' future' : M.dates.length && wLast < M.dates[0] ? ' pre' : ''));
+      if (wn) { w.appendChild(el('span', 'dn', '週')); value(w, wr, wn, wp); }
+      grid.appendChild(w);
+    });
+
+    // 月合計
+    const inMonth = [...days.entries()].filter(([d]) => d.startsWith(calMonth)).map(([, o]) => o);
+    const s = $('cal-sum'); s.replaceChildren();
+    const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    if (!inMonth.length) add('這個月還沒有出場紀錄。');
+    else {
+      const r = d3.sum(inMonth, (o) => o.r), p = d3.sum(inMonth, (o) => o.p);
+      const up = inMonth.filter((o) => o.r > 0).length, dn = inMonth.filter((o) => o.r < 0).length;
+      add(m + ' 月 '); add(F.pct(r), 'n ' + F.tone(r)); add('・出場 '); add(String(inMonth.length), 'n'); add(` 天（${up} 天賺、${dn} 天賠）・淨 `); add(F.money(p) + ' 元', 'n ' + F.tone(p));
+    }
+    calTip.days = days;
+  };
+  // 滑過（手機點一下、鍵盤聚焦）一格：看當天各策略各貢獻多少
+  const calTip = { days: null, box: null };
+  const calShow = (btn) => {
+    const o = calTip.days && calTip.days.get(btn.dataset.day);
+    if (!o) return;
+    const card = btn.closest('.cal');
+    document.querySelectorAll('.cal-d.on').forEach((b) => b.classList.remove('on'));
+    btn.classList.add('on');
+    let tip = card.querySelector('.tip');
+    if (!tip) { tip = el('div', 'tip'); card.appendChild(tip); }
+    tip.replaceChildren(); tip.style.display = '';
+    const iso = btn.dataset.day;
+    const hd = el('div', 'd'); hd.appendChild(el('span', null, F.day(iso) + '（' + WD[new Date(iso + 'T00:00:00Z').getUTCDay()] + '）')); hd.appendChild(el('span', null, o.n + ' 趟')); tip.appendChild(hd);
+    const row = (sw, name, v, cls) => { const r = el('div', 'r ' + (cls || '')); r.appendChild(sw); r.appendChild(el('span', null, name)); r.appendChild(el('span', 'n ' + F.tone(v), F.pct(v))); tip.appendChild(r); };
+    row(swatch(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), '', 3), '當天合計', o.r, 'tot');
+    o.by.slice().sort((a, b) => b[1] - a[1]).forEach(([name, v]) => { const st = M.strat.find((x) => x.name === name); row(st && st.color ? swatch(st.color, st.dash) : blank(), st ? st.short : shortOf(name), v); });
+    const f = el('div', 'd'); f.style.margin = '4px 0 0'; f.textContent = '淨損益 ' + F.money(o.p) + ' 元'; tip.appendChild(f);
+    const cb = card.getBoundingClientRect(), bb = btn.getBoundingClientRect();
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = bb.left - cb.left + bb.width / 2 - tw / 2;
+    left = Math.max(8, Math.min(cb.width - tw - 8, left));
+    let top = bb.bottom - cb.top + 6;
+    if (top + th > cb.height - 4) top = bb.top - cb.top - th - 6;
+    tip.style.left = left + 'px'; tip.style.top = Math.max(4, top) + 'px';
+  };
+  const calHide = () => { const t = document.querySelector('.cal .tip'); if (t) t.style.display = 'none'; document.querySelectorAll('.cal-d.on').forEach((b) => b.classList.remove('on')); };
+  hiders.set('cal', calHide);
+
   // ---- 各策略表（依分類分組，每組有小計） ----
   const renderStrategies = () => {
     const tb = $('st-body'); tb.replaceChildren();
@@ -1054,10 +1211,10 @@
   const openStrategy = (name) => { homeY = window.scrollY; pushed = true; location.hash = 's=' + encodeURIComponent(name); };
   const goBack = () => { if (pushed) { pushed = false; history.back(); } else { history.replaceState(null, '', location.pathname + location.search); route(); } };
 
-  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
+  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderCalendar(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
 
   // 手機：手指放開後提示留著，點圖以外的地方才收起來
-  document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart')) hiders.forEach((h) => h()); }, { passive: true });
+  document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart, button.cal-d')) hiders.forEach((h) => h()); }, { passive: true });
 
   // 電腦每個交易日 14:00 推送。從今天往回數：有幾個平日已經過了 15:00，但那天之後都沒有推送。
   // 一律用台北時間算（台灣沒有夏令時間，直接加 8 小時），在國外打開也一樣。
@@ -1126,6 +1283,16 @@
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && cur && !ev.defaultPrevented) goBack(); });
   window.addEventListener('hashchange', route);
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  // 獲利日曆：切月份、滑過或點格子看當天明細
+  const calGo = (k) => { calPinned = true; calMonth = monthAdd(calMonth, k); calHide(); renderCalendar(); };
+  $('cal-prev').addEventListener('click', () => calGo(-1));
+  $('cal-next').addEventListener('click', () => calGo(1));
+  const cg = $('cal-grid');
+  cg.addEventListener('pointerover', (ev) => { const b = ev.target.closest('button.cal-d'); if (b && ev.pointerType !== 'touch') calShow(b); });
+  cg.addEventListener('pointerleave', (ev) => { if (ev.pointerType !== 'touch') calHide(); });
+  cg.addEventListener('click', (ev) => { const b = ev.target.closest('button.cal-d'); if (b) calShow(b); });
+  cg.addEventListener('focusin', (ev) => { const b = ev.target.closest('button.cal-d'); if (b) calShow(b); });
+  cg.addEventListener('focusout', (ev) => { if (!cg.contains(ev.relatedTarget)) calHide(); });
   $('reload').addEventListener('click', refresh);
   $('retry').addEventListener('click', refresh);
   let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => { if (!M) return; if (cur) dChart(); else renderChart(); }, 150); });
