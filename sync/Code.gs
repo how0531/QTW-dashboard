@@ -12,13 +12,15 @@
  * 安裝：見 sync/README.md。第一次要先執行 setup() 產生密碼（SYNC_TOKEN）。
  */
 
-var VERSION = '2026-11-04';
+var VERSION = '2026-11-05';
 
 var TABS = { trips: '_trips', positions: '_positions', daily: '_daily', log: '_sync_log' };
 // 用公式整欄展開的呈現頁：列數不夠時陣列公式會出錯，所以跟著原始資料一起加列。值是標題佔掉的列數
 var VIEWS = { trips: { '交易明細': 1 }, daily: { '每日': 3 } };
 // 網頁讀得到的分頁（公開）。其他分頁、公式、試算表擁有者都不會經過這裡
 var WEB_TABS = { strategies: '策略對照', trips: '_trips', positions: '_positions', sync: '_sync_log' };
+// 網頁只顯示 %（使用者 2026-11-05 決定）：金額和張數不給網頁，只留在試算表裡
+var WEB_HIDE = ['shares', 'entry_amount', 'gross_pnl', 'fee', 'tax', 'net_pnl', 'unrealized_pnl'];
 
 var COLS = {
   trips: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'shares', 'entry_date', 'entry_time',
@@ -52,7 +54,7 @@ function setup() {
   return t;
 }
 
-/** 網頁讀資料用：回傳 WEB_TABS 每頁的內容（第一列是欄名）。不用密碼，所以只放本來就要公開的分頁 */
+/** 網頁讀資料用：回傳 WEB_TABS 每頁的內容（第一列是欄名），拿掉 WEB_HIDE 的金額欄。不用密碼，所以只放本來就要公開的東西 */
 function doGet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var out = { ok: true, service: 'qtw-sheet-sync', version: VERSION };
@@ -66,8 +68,9 @@ function webTable_(sh) {
   var nr = sh.getLastRow(), nc = sh.getLastColumn();
   if (nr < 1 || nc < 1) return [];
   var range = sh.getRange(1, 1, nr, nc), values = range.getValues(), shown = range.getDisplayValues();
+  var keep = values[0].map(function (h, j) { return WEB_HIDE.indexOf(String(h).trim()) < 0 ? j : -1; }).filter(function (j) { return j >= 0; });
   return values.map(function (row, i) {
-    return row.map(function (v, j) { return v instanceof Date ? shown[i][j] : v; });
+    return keep.map(function (j) { var v = row[j]; return v instanceof Date ? shown[i][j] : v; });
   }).filter(function (row, i) { return i === 0 || row.some(function (v) { return v !== '' && v != null; }); });
 }
 

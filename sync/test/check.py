@@ -96,7 +96,10 @@ with urllib.request.urlopen(BASE + "/exec") as r:
     web = json.loads(r.read().decode("utf-8"))
 check("GET 只回傳網頁要的 4 個分頁", web.get("ok") and set(web) == {"ok", "service", "version", "strategies", "trips", "positions", "sync"}, sorted(web))
 check("GET 的 trips 第一列是欄名、共 3 趟", web["trips"][0][:3] == ["trip_id", "exit_date", "strategy"] and len(web["trips"]) == 4, web["trips"][:2])
-check("GET 的代號 00878 還是文字、報酬是數字", any(r[4] == "00878" for r in web["trips"][1:]) and all(isinstance(r[20], (int, float)) for r in web["trips"][1:]), [r[4] for r in web["trips"][1:]])
+th = web["trips"][0]; ri = th.index("return_pct")
+check("GET 的代號 00878 還是文字、報酬是數字", any(r[4] == "00878" for r in web["trips"][1:]) and all(isinstance(r[ri], (int, float)) for r in web["trips"][1:]), [r[4] for r in web["trips"][1:]])
+HIDE = {"shares", "entry_amount", "gross_pnl", "fee", "tax", "net_pnl", "unrealized_pnl"}
+check("GET 不給金額和張數（網站只顯示 %）", not HIDE & set(th) and not HIDE & set(web["positions"][0]) and "return_pct" in th and "unrealized_pct" in web["positions"][0], [th, web["positions"][0]])
 check("GET 回應裡沒有密碼", TOKEN not in json.dumps(web, ensure_ascii=False))
 check("GET 讀得到策略對照的分類", web["strategies"][1][4] == "當沖做空", web["strategies"])
 

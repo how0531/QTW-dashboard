@@ -27,8 +27,9 @@
     --border: #1e293b; --rule: #162036; --control: #334155;
     --text: #f8fafc; --muted: #94a3b8; --faint: #7c8ba1;
     --accent: #3b82f6; --accent-soft: rgba(59,130,246,.14); --link: #60a5fa;
-    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155;
+    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155; --peak: #deb06c;
     --ok-bg: rgba(74,222,128,.12); --ok: #4ade80; --bad-bg: rgba(248,113,113,.14); --bad: #fca5a5;
+    --warn: #fbbf24; --warn-bg: rgba(251,191,36,.14); --danger: #fb7185; --danger-bg: rgba(251,113,133,.16);
     --tip-shadow: 0 8px 24px rgba(0,0,0,.5);
     --font: "Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
     --num: "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -40,8 +41,9 @@
     --border: #e2e8f0; --rule: #eef2f6; --control: #cbd5e1;
     --text: #0f172a; --muted: #475569; --faint: #64748b;
     --accent: #2563eb; --accent-soft: rgba(37,99,235,.10); --link: #1d4ed8;
-    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff;
+    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff; --peak: #a87a22;
     --ok-bg: #dcfce7; --ok: #166534; --bad-bg: #fee2e2; --bad: #991b1b;
+    --warn: #a16207; --warn-bg: #fef3c7; --danger: #be123c; --danger-bg: #ffe4e6;
     --tip-shadow: 0 8px 24px rgba(15,23,42,.12);
     color-scheme: light;
   }
@@ -53,7 +55,8 @@
   :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
   .n { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; letter-spacing: -0.01em; }
   .up { color: var(--up); } .down { color: var(--down); } .mute { color: var(--muted); }
-  button, .tg, tbody.pick tr.row { transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
+  button, .tg, tbody.pick tr.row { transition: background-color .18s ease, color .18s ease, border-color .18s ease; touch-action: manipulation; }
+  h1, h2 { text-wrap: balance; }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
   /* 產品列 */
@@ -76,6 +79,17 @@
   .page { max-width: 1280px; margin-inline: auto; padding: 20px max(24px, env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
   .title { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
   h1 { margin: 0; font-size: 24px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+  .title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.1); background: var(--accent); }
+  .share-dlg { width: min(92vw, 440px); max-height: 92vh; overflow: auto; overscroll-behavior: contain; padding: 16px; border: 1px solid var(--control); border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: var(--tip-shadow); }
+  .share-dlg::backdrop { background: rgba(2, 6, 23, .7); }
+  .sd-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .sd-img { position: relative; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--raised); display: grid; place-items: center; }
+  .sd-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .sd-img img:not([src]) { display: none; }
+  .share-dlg > .meta { margin: 10px 0 0; }
+  .sd-act { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
   .finding { margin: 0; font-size: 14px; color: var(--muted); }
   .finding .n { font-weight: 600; color: var(--text); }
   .finding .n.up { color: var(--up); } .finding .n.down { color: var(--down); }
@@ -90,13 +104,22 @@
   .legend-hi { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 
   /* 指標列：一個容器分格，第一格是累積報酬 */
-  .kpis { display: grid; grid-template-columns: minmax(0, 1.35fr) repeat(5, minmax(0, 1fr)); }
+  .kpis { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(6, minmax(0, 1fr)); }
   .kpi { padding: 14px var(--pad); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .kpi + .kpi { border-left: 1px solid var(--border); }
   .kpi-l { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
   .kpi-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 20px; font-weight: 600; line-height: 1.25; white-space: nowrap; letter-spacing: -0.02em; }
   .kpi-v small { font-family: var(--font); font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; letter-spacing: 0; }
   .kpi-s { font-size: 12px; color: var(--muted); }
+  .kpi-s .n { font-family: var(--num); font-variant-numeric: tabular-nums; color: var(--text); }
+  .kpi-s .n.up { color: var(--up); } .kpi-s .n.down { color: var(--down); }
+  /* 風控燈號：安全（灰點）、需注意（黃）、危險（紅底＋驚嘆號），一定配文字，不只靠顏色 */
+  .risk { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--muted); }
+  .risk::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .risk.lv1 { color: var(--warn); } .risk.lv1::before { opacity: 1; }
+  .risk.lv2 { color: var(--danger); background: var(--danger-bg); padding: 1px 7px 1px 5px; border-radius: 5px; }
+  .risk.lv2::before { content: "!"; width: 13px; height: 13px; display: inline-grid; place-items: center; font-size: 10px; font-weight: 800; color: var(--surface); background: var(--danger); opacity: 1; }
+  .kpi-v.risk-v { font-size: 17px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
   .kpi-lead { background: linear-gradient(var(--accent-soft), var(--accent-soft)); border-radius: var(--radius) 0 0 var(--radius); }
   .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
   .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; }
@@ -111,11 +134,20 @@
   /* 總績效：左圖右開關 */
   .perf { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); }
   .perf-main { padding: 14px var(--pad) 10px; min-width: 0; display: flex; flex-direction: column; }
-  .perf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+  .perf-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: 32px; }
+  .perf-sub { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin-top: 4px; }
+  .perf-sub .meta .n { color: var(--text); font-weight: 600; } .perf-sub .meta .n.down { color: var(--down); }
+  .legends { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
+  .seg.seg-sm button { min-width: 0; height: 28px; padding: 0 10px; font-size: 12px; }
+  .perf-ctl { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+  .hint .h-coarse { display: none; }
+  @media (pointer: coarse) { .hint .h-fine { display: none; } .hint .h-coarse { display: inline; } }
+  .tip .r.sub, .tip .r.dd { color: var(--muted); }
   .perf-side { border-left: 1px solid var(--border); padding: 14px 12px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-  .chart { position: relative; margin-top: 10px; flex: 1 1 auto; min-height: 320px; }
-  .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .chart { position: relative; margin-top: 10px; flex: 1 1 auto; min-height: 360px; }
+  .chart svg { display: block; width: 100%; height: 100%; overflow: visible; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   .chart svg:focus-visible { outline: 2px solid var(--link); outline-offset: 4px; border-radius: 4px; }
+  .chart svg:focus:not(:focus-visible), .chart svg .b:focus:not(:focus-visible) { outline: none; }
   .chart.short { flex: none; height: 200px; min-height: 0; }
   .chart-empty { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-size: 13px; color: var(--muted); }
   .tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--control); border-radius: 8px; box-shadow: var(--tip-shadow); padding: 8px 10px; font-size: 12px; min-width: 160px; }
@@ -164,6 +196,12 @@
   .cal-sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
   .cal-sw.g1 { margin-right: 4px; } .cal-sw.g4 { margin-left: 4px; } .cal-sw.r4 { margin-right: 4px; }
   .cal .tip { min-width: 190px; }
+  /* 策略比較泡泡圖 */
+  .bub-chart { margin: 0; padding: 0 var(--pad) 12px; min-height: 0; height: 340px; flex: none; }
+  .bub-chart svg .b { cursor: pointer; outline: none; }
+  .bub-chart svg .b .ring-f { display: none; }
+  .bub-chart svg .b:focus-visible .ring-f { display: inline; }
+  .bub-chart .tip { min-width: 180px; }
 
   .grp { display: flex; flex-direction: column; gap: 1px; }
   .grp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0 8px; min-height: 32px; cursor: pointer; text-align: left; font-size: 12px; color: var(--muted); letter-spacing: .02em; border-radius: 6px; }
@@ -225,6 +263,9 @@
   .kv > div:last-child { border-bottom: 0; }
   .kv dt { font-size: 13px; color: var(--muted); }
   .kv dd { margin: 0; text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 16px; font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
+  .kv > div.kv-risk { flex-direction: column; align-items: stretch; gap: 4px; }
+  .kv-risk dd { text-align: left; white-space: normal; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .kv-risk dd small { margin-left: 0; }
   .kv dd small { margin-left: 4px; font-family: var(--font); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
   .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px var(--pad) 0; }
   .seg { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--active); }
@@ -232,25 +273,26 @@
   .seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.2); font-weight: 600; }
   .more-wrap { display: flex; justify-content: center; padding: 0 var(--pad) 16px; }
   #detail td.mob.two { padding-top: 10px; padding-bottom: 10px; }
-  @media (pointer: coarse) { .seg button { height: 40px; } }
+  @media (pointer: coarse) { .seg button, .seg.seg-sm button { height: 44px; } .seg.seg-sm button { padding: 0 11px; min-width: 44px; } .grp-h { min-height: 44px; } }
 
   .skel { display: inline-block; height: .9em; width: 4em; border-radius: 4px; background: var(--active); vertical-align: middle; animation: pulse 1.4s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: .5; } }
 
   @media (pointer: coarse) { :root { --hit: 44px; --row: 44px; } }
   @media (max-width: 1080px) {
-    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .kpi:nth-child(4) { border-left: 0; }
-    .kpi:nth-child(n+4) { border-top: 1px solid var(--border); }
+    .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .kpi:nth-child(5) { border-left: 0; }
+    .kpi:nth-child(n+5) { border-top: 1px solid var(--border); }
     .kpi-lead { border-radius: var(--radius) 0 0 0; }
   }
   @media (max-width: 980px) {
     .perf { grid-template-columns: 1fr; }
-    .chart { flex: none; height: 300px; min-height: 0; }
+    .chart { flex: none; height: 340px; min-height: 0; }
     .perf-side { border-left: 0; border-top: 1px solid var(--border); }
     .two-col { grid-template-columns: 1fr; }
   }
   @media (max-width: 640px) {
+    .bub-chart { height: 300px; }
     .bar-in { padding-inline: 16px; gap: 8px; }
     .mark span { display: none; }
     .page { padding-inline: 16px; padding-top: 16px; }
@@ -258,9 +300,10 @@
     h1 { font-size: 22px; }
     .lead-v { font-size: 30px; }
     .fresh { font-size: 12px; gap: 6px; }
-    .fresh .btn .lbl { display: none; }
+    .fresh .btn .lbl, .share-btn .lbl { display: none; }
+    .share-btn { width: var(--hit); padding: 0; justify-content: center; }
     .fresh #reload { width: var(--hit); padding: 0; justify-content: center; }
-    .chart { height: 240px; }
+    .chart { height: 300px; }
     .chart.short { height: 200px; }
     .cal-grid { gap: 3px; padding-top: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .cal-d { min-height: 54px; padding: 6px 5px; border-radius: 6px; }
@@ -308,22 +351,24 @@
 
   <div class="view" id="home">
   <div class="title">
-    <h1>策略績效</h1>
+    <div class="title-row"><h1>策略績效</h1><button class="btn share-btn" id="share" type="button" aria-haspopup="dialog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span class="lbl">分享圖卡</span></button></div>
     <p class="finding" id="finding"><span class="skel" style="width:18em"></span></p>
   </div>
 
   <section class="card kpis" aria-label="主要指標">
     <div class="kpi kpi-lead"><span class="kpi-l">累積報酬</span><span class="lead-v" id="lead-v"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="lead-s"></span></div>
-    <div class="kpi"><span class="kpi-l">已實現淨損益</span><span class="kpi-v" id="k-pnl"><span class="skel"></span></span><span class="kpi-s">扣手續費和稅</span></div>
     <div class="kpi"><span class="kpi-l">勝率</span><span class="kpi-v" id="k-win"><span class="skel"></span></span><span class="kpi-s" id="k-wl">&nbsp;</span></div>
+    <div class="kpi" title="賺的趟報酬加總 ÷ 賠的趟報酬加總（扣手續費和稅）。大於 1 代表賺的比賠的多"><span class="kpi-l">獲利因子</span><span class="kpi-v" id="k-pf"><span class="skel"></span></span><span class="kpi-s" id="k-pf-s">&nbsp;</span></div>
+    <div class="kpi" title="依出場時間排，勝負只看價差，平手不算也不中斷"><span class="kpi-l">連勝連敗</span><span class="kpi-v" id="k-st"><span class="skel"></span></span><span class="kpi-s" id="k-st-s">&nbsp;</span></div>
     <div class="kpi"><span class="kpi-l">持倉</span><span class="kpi-v" id="k-pos"><span class="skel"></span></span><span class="kpi-s" id="k-pos-s">&nbsp;</span></div>
-    <div class="kpi"><span class="kpi-l">未實現損益</span><span class="kpi-v" id="k-unr"><span class="skel"></span></span><span class="kpi-s" id="k-unr-s">&nbsp;</span></div>
+    <div class="kpi" title="各策略離高點多少、連虧幾趟，和策略對照表設的上限比"><span class="kpi-l">風控</span><span class="kpi-v risk-v" id="k-risk"><span class="skel"></span></span><span class="kpi-s" id="k-risk-s">&nbsp;</span></div>
     <div class="kpi"><span class="kpi-l">和電腦資料核對</span><span class="pill" id="k-check">—</span></div>
   </section>
 
   <section class="card perf" aria-labelledby="perf-h">
     <div class="perf-main">
-      <div class="perf-head"><h2 id="perf-h">總績效走勢</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+      <div class="perf-head"><h2 id="perf-h">總績效走勢</h2><div class="perf-ctl"><div class="seg seg-sm" id="range" role="group" aria-label="期間"><button type="button" data-r="all" aria-pressed="true">全部</button><button type="button" data-r="1m" aria-pressed="false">近一月</button><button type="button" data-r="3m" aria-pressed="false">近三月</button><button type="button" data-r="ytd" aria-pressed="false">今年</button></div><div class="seg seg-sm" id="freq" role="group" aria-label="週期"><button type="button" data-f="d" aria-pressed="true" title="每個出場日一個點">日</button><button type="button" data-f="w" aria-pressed="false" title="每週一個點（那週最後一個出場日收盤）">週</button><button type="button" data-f="m" aria-pressed="false" title="每月一個點（那月最後一個出場日收盤）">月</button></div></div></div>
+      <div class="perf-sub"><span class="meta" id="perf-meta"></span><span class="legends" aria-hidden="true"><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="var(--peak)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="4" height="8" rx="1" fill="var(--up)" fill-opacity=".6"/><rect x="7" y="6" width="4" height="4" rx="1" fill="var(--down)" fill-opacity=".6"/></svg><span data-lg="bar">每日報酬</span></span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 3h10v3l-4 3H1Z" fill="var(--down)" fill-opacity=".35" stroke="var(--down)" stroke-width="1"/></svg>回撤</span><span class="legend-hi hint"><svg width="14" height="12" viewBox="0 0 14 12"><rect x="3" y="1" width="8" height="10" rx="1" fill="var(--accent)" fill-opacity=".18"/><path d="M1 6h12M3 4 1 6l2 2M11 4l2 2-2 2" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="h-fine">拖一段看區間</span><span class="h-coarse">長按再拖看區間</span></span></span></div>
       <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
     </div>
     <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
@@ -346,11 +391,16 @@
     </div>
   </section>
 
+  <section class="card bub" aria-labelledby="bub-h">
+    <div class="card-h"><h2 id="bub-h">策略比較</h2><span class="meta">橫軸勝率、縱軸獲利因子，泡泡越大趟數越多。右上角＝又準又賺，點泡泡看那支策略</span></div>
+    <div class="chart bub-chart" id="bub"><p class="chart-empty" id="bub-empty" hidden></p></div>
+  </section>
+
   <section class="card" aria-labelledby="st-h">
     <div class="card-h"><h2 id="st-h">各策略</h2><span class="meta">依分類排列，點一列看那支策略的股票和每趟進出場</span></div>
     <div class="tbl-wrap">
       <table>
-        <thead><tr><th>策略</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>平均每趟</th><th>持倉</th><th>未實現</th><th>最近出場</th><th class="chev"></th></tr></thead>
+        <thead><tr><th>策略</th><th>風控</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th title="賺的趟報酬加總 ÷ 賠的趟報酬加總">獲利因子</th><th>平均每趟</th><th>持倉</th><th title="持倉各檔未實現 % 加總">未實現</th><th>最近出場</th><th class="chev"></th></tr></thead>
         <tbody class="pick" id="st-body"></tbody>
       </table>
     </div>
@@ -361,7 +411,7 @@
       <div class="card-h"><h2 id="pos-h">目前持倉</h2><span class="meta" id="pos-meta"></span></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>股票</th><th>多空</th><th>張數</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
+          <thead><tr><th>股票</th><th>多空</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
           <tbody id="pos-body"></tbody>
         </table>
       </div>
@@ -377,20 +427,21 @@
     </section>
   </div>
 
-  <p class="foot">累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負只看價差，不扣手續費。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
+  <p class="foot">網站只顯示報酬 %，不顯示金額和張數。累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負、連勝連敗只看價差，不扣手續費；獲利因子、賺賠比用扣完手續費和稅的報酬。風控的回撤是從已實現的最高點算到現在（含持倉未實現），上限沒設時是回撤 10%、連虧 3 趟，可在試算表「策略對照」的回撤上限、連虧上限兩欄改。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
   </div>
 
   <div class="view" id="detail" hidden>
     <div class="title">
-      <h1 id="d-name"></h1>
+      <div class="title-row"><h1 id="d-name"></h1><button class="btn share-btn" id="d-share" type="button" aria-haspopup="dialog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span class="lbl">分享圖卡</span></button></div>
       <p class="d-sub" id="d-sub"></p>
       <p class="finding" id="d-finding"><span class="skel" style="width:14em"></span></p>
     </div>
 
     <section class="card perf" id="d-perf" aria-labelledby="d-perf-h">
       <div class="perf-main">
-        <div class="perf-head"><h2 id="d-perf-h">累積報酬</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+        <div class="perf-head"><h2 id="d-perf-h">累積報酬</h2><div class="perf-ctl"><div class="seg seg-sm" role="group" aria-label="期間"><button type="button" data-r="all" aria-pressed="true">全部</button><button type="button" data-r="1m" aria-pressed="false">近一月</button><button type="button" data-r="3m" aria-pressed="false">近三月</button><button type="button" data-r="ytd" aria-pressed="false">今年</button></div><div class="seg seg-sm" role="group" aria-label="週期"><button type="button" data-f="d" aria-pressed="true" title="每個出場日一個點">日</button><button type="button" data-f="w" aria-pressed="false" title="每週一個點（那週最後一個出場日收盤）">週</button><button type="button" data-f="m" aria-pressed="false" title="每月一個點（那月最後一個出場日收盤）">月</button></div></div></div>
         <div class="lead"><span class="lead-v" id="d-lead"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="d-lead-s"></span></div>
+        <div class="perf-sub"><span class="meta" id="d-perf-meta"></span><span class="legends" aria-hidden="true"><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4" fill="var(--peak)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="2" width="4" height="8" rx="1" fill="var(--up)" fill-opacity=".6"/><rect x="7" y="6" width="4" height="4" rx="1" fill="var(--down)" fill-opacity=".6"/></svg><span data-lg="bar">每日報酬</span></span><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 3h10v3l-4 3H1Z" fill="var(--down)" fill-opacity=".35" stroke="var(--down)" stroke-width="1"/></svg>回撤</span><span class="legend-hi hint"><svg width="14" height="12" viewBox="0 0 14 12"><rect x="3" y="1" width="8" height="10" rx="1" fill="var(--accent)" fill-opacity=".18"/><path d="M1 6h12M3 4 1 6l2 2M11 4l2 2-2 2" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="h-fine">拖一段看區間</span><span class="h-coarse">長按再拖看區間</span></span></span></div>
         <div class="chart" id="d-chart"><p class="chart-empty" id="d-chart-empty" hidden></p></div>
       </div>
       <dl class="perf-side kv" id="d-kv"></dl>
@@ -400,7 +451,7 @@
       <div class="card-h"><h2 id="d-pos-h">目前持倉</h2><span class="meta" id="d-pos-meta"></span></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>張數</th><th>進場日</th><th>持有</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>進場日</th><th>持有</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
           <tbody id="d-pos-body"></tbody>
         </table>
       </div>
@@ -414,11 +465,11 @@
       </div>
       <div class="tbl-wrap">
         <table id="d-trips">
-          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>張數</th><th>進場時間</th><th>進場價</th><th>出場時間</th><th>出場價</th><th>持有</th><th>報酬</th></tr></thead>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>進場時間</th><th>進場價</th><th>出場時間</th><th>出場價</th><th>持有</th><th>報酬</th></tr></thead>
           <tbody id="d-tr-body"></tbody>
         </table>
         <table id="d-stocks" hidden>
-          <thead><tr><th>代號</th><th class="l">股票</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>最近出場</th><th class="chev"></th></tr></thead>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>平均每趟</th><th>最近出場</th><th class="chev"></th></tr></thead>
           <tbody class="pick" id="d-st-body"></tbody>
         </table>
       </div>
@@ -428,6 +479,13 @@
     <p class="foot">報酬是每趟扣手續費和稅之後的報酬率，累積報酬是直接相加。勝負只看價差。持有時間：當天進出算到秒，跨日算天數。紅色賺、綠色賠。</p>
   </div>
 </main>
+
+<dialog class="share-dlg" id="share-dlg" aria-labelledby="share-h">
+  <div class="sd-head"><h2 id="share-h">分享圖卡</h2><button class="btn icon-btn" id="share-x" type="button" aria-label="關閉"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="sd-img"><img id="share-img" alt="" width="1080" height="1350"><p class="meta" id="share-wait">產生中…</p></div>
+  <p class="meta">圖上只有報酬 %，沒有金額和張數。</p>
+  <div class="sd-act"><button class="btn" id="share-save" type="button">儲存圖片</button><button class="btn primary" id="share-go" type="button" hidden>分享…</button></div>
+</dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
@@ -440,7 +498,7 @@
   const API_URL = '';
   const SHEET_ID = '1ZF5fgJgwMrs5sfUYWTpfX0HI9zoZlQL9WxcU4QeZL7U';
   const SRC = {
-    strategies: { sheet: '策略對照', range: 'A1:E', text: ['策略', '狀態', '上線日', '備註', '分類'] },
+    strategies: { sheet: '策略對照', range: 'A1:G', text: ['策略', '狀態', '上線日', '備註', '分類'] },
     trips: { sheet: '_trips', range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
     positions: { sheet: '_positions', range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
     sync: { sheet: '_sync_log', range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
@@ -477,12 +535,14 @@
     const n = Number(pct ? t.slice(0, -1) : t);
     return Number.isNaN(n) ? null : (pct ? n / 100 : n);
   };
+  // 網站只顯示 %（2026-11-05 決定）：就算資料裡有金額、張數也直接丟掉，不會出現在畫面上
+  const AMT = new Set(['shares', 'entry_amount', 'gross_pnl', 'fee', 'tax', 'net_pnl', 'unrealized_pnl']);
   // 一列欄名＋資料列 → 物件；文字欄保留字串（00878 不會掉 0），其他轉成數字
   const toObjects = (s, head, rows) => rows.map((r) => {
     const o = {};
     head.forEach((h, i) => {
       const c = String(h ?? '').trim();
-      if (!c) return;
+      if (!c || AMT.has(c)) return;
       const v = r[i] == null ? '' : r[i];
       o[c] = s.text.includes(c) ? (v === '' ? null : String(v)) : toNum(v);
     });
@@ -511,10 +571,8 @@
   const F = {
     pct: (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? MINUS : '') + Math.abs(v * 100).toFixed(2) + '%'),
     rate: (v) => (v == null ? '—' : (v * 100).toFixed(0) + '%'),
-    money: (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? MINUS : '') + d3.format(',')(Math.abs(Math.round(v)))),
     int: (v) => (v == null ? '—' : d3.format(',')(v)),
     price: (v) => (v == null ? '—' : String(+Number(v).toFixed(2))),
-    lots: (v) => (v == null ? '—' : String(+Number(v / 1000).toFixed(3))),
     iso: (s) => { const m = /(\d{4})\D(\d{1,2})\D(\d{1,2})/.exec(String(s || '')); return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : ''; },
     day: (s) => { const p = F.iso(s).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : '—'; },
     tone: (v) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down'),
@@ -533,6 +591,39 @@
   let choice = store.get('qtw-lines') || {};  // 使用者點過的開關：{策略: true/false}
   let hidden = new Set();
 
+  // ---- 交易統計（參考 TradeTrack-Pro）----
+  // 獲利因子、賺賠比用每趟扣手續費和稅之後的報酬；連勝連敗和勝率一樣只看價差，平手不算也不中斷
+  const exitKey = (t) => (t.d || F.iso(t.exit_date)) + ' ' + F.hms(t.exit_time);
+  const tradeStats = (ts) => {
+    const r = ts.map((t) => t.return_pct || 0), win = r.filter((v) => v > 0), loss = r.filter((v) => v < 0);
+    const gw = d3.sum(win), gl = -d3.sum(loss);
+    const seq = ts.slice().sort((a, b) => d3.ascending(exitKey(a), exitKey(b))).map(winOf).filter((v) => v);
+    let maxW = 0, maxL = 0, run = 0;
+    seq.forEach((v, i) => { run = i && v === seq[i - 1] ? run + 1 : 1; if (v > 0) maxW = Math.max(maxW, run); else maxL = Math.max(maxL, run); });
+    const last = seq[seq.length - 1] || 0;
+    return {
+      pf: gl ? gw / gl : gw ? Infinity : null, payoff: win.length && loss.length ? gw / win.length / (gl / loss.length) : null,
+      avgW: win.length ? gw / win.length : null, avgL: loss.length ? -gl / loss.length : null,
+      streak: last ? { w: last, n: run } : null, maxW, maxL,
+    };
+  };
+  // 風控上限：策略對照表的「回撤上限」「連虧上限」，沒填就用預設。10 或 10% 都當 10%
+  const RISK = { dd: 0.10, streak: 3 };
+  const limitPct = (v) => (v == null || !Number(v) ? null : Math.abs(Math.abs(v) > 1 ? v / 100 : v));
+  const RISK_L = ['安全', '需注意', '危險'];
+  // 危險：到上限；需注意：回撤到上限的一半，或再虧一趟就到連虧上限
+  // 距高點＝已實現累積的最高點 到 現在（已實現＋持倉未實現）差多少：持倉還沒出場的虧損也要算進去
+  const riskOf = (s) => {
+    if (!s.n && !s.pos) return null;
+    const dd = Math.max(0, -(s.nowDD || 0) - (s.unr || 0)), run = s.streak && s.streak.w < 0 ? s.streak.n : 0;
+    const lv = dd >= s.ddLim - 1e-9 || run >= s.stLim ? 2 : dd >= s.ddLim / 2 - 1e-9 || (s.stLim >= 3 && run >= s.stLim - 1) ? 1 : 0;
+    return { lv, label: RISK_L[lv], dd, run, text: `距高點 ${F.pct(-dd)}${s.pos ? '（含持倉）' : ''}／上限 ${Math.round(s.ddLim * 1000) / 10}%・連虧 ${run}／${s.stLim} 趟` };
+  };
+  const riskTag = (r) => { if (!r) return el('span', 'meta', '—'); const t = el('span', 'risk lv' + r.lv, r.label); t.title = r.text; return t; };
+  const ratio = (v) => (v == null || v === Infinity ? '—' : v.toFixed(2));
+  const streakText = (st) => (st ? st.n + (st.w > 0 ? ' 連勝' : ' 連敗') : '—');
+  const daysSince = (iso) => Math.round((Date.parse(isoOf(new Date(Date.now() + TPE)) + 'T00:00:00Z') - Date.parse(iso + 'T00:00:00Z')) / 864e5);
+
   // ---- 把資料整理成畫面要的樣子 ----
   const build = () => {
     // 策略清單＝策略對照（照列的順序）＋還沒登錄但有交易或持倉的（標「未登錄」），新策略會自動出現
@@ -544,16 +635,17 @@
     const trips = D.trips.map((t) => ({ ...t, d: F.iso(t.exit_date) })).filter((t) => t.d && t.strategy);
     const lastPosDate = d3.max(D.positions, (p) => F.iso(p.date)) || '';
     const positions = D.positions.filter((p) => F.iso(p.date) === lastPosDate);
-    // 勝負只看價差（gross_pnl），不扣手續費
+    // 勝負只看價差（進出場價），不扣手續費；未實現＝各檔未實現 % 加總（和累積報酬一樣每趟直接相加）
     const tBy = d3.group(trips, (t) => t.strategy), pBy = d3.group(positions, (p) => p.strategy);
     const strat = rows.map((r) => {
       const name = r['策略'], s = shortOf(name), ts = tBy.get(name) || [], ps = pBy.get(name) || [];
-      const n = ts.length, ret = d3.sum(ts, (t) => t.return_pct || 0);
+      const n = ts.length, ret = d3.sum(ts, (t) => t.return_pct || 0), wl = ts.map(winOf);
       return {
         name, short: shorts.get(s) > 1 ? name : s, cat: catOf(name, r['分類']), status: r['狀態'] || '', order: r.order,
-        n, w: ts.filter((t) => (t.gross_pnl || 0) > 0).length, l: ts.filter((t) => (t.gross_pnl || 0) < 0).length,
-        t: ts.filter((t) => !t.gross_pnl).length, ret, pnl: d3.sum(ts, (t) => t.net_pnl || 0), avg: n ? ret / n : null,
-        pos: ps.length, unr: d3.sum(ps, (p) => p.unrealized_pnl || 0), last: d3.max(ts, (t) => t.d) || '',
+        n, w: wl.filter((v) => v > 0).length, l: wl.filter((v) => v < 0).length, t: wl.filter((v) => !v).length,
+        ret, avg: n ? ret / n : null, ...tradeStats(ts),
+        pos: ps.length, unr: d3.sum(ps, (p) => p.unrealized_pct || 0), last: d3.max(ts, (t) => t.d) || '',
+        ddLim: limitPct(r['回撤上限']) ?? RISK.dd, stLim: Math.round(r['連虧上限']) > 0 ? Math.round(r['連虧上限']) : RISK.streak,
       };
     });
     // 線條樣式依策略對照裡的列順序分配：新策略加在最下面，其他策略的顏色不會跟著變
@@ -566,8 +658,8 @@
     const n = trips.length, ret = d3.sum(trips, (t) => t.return_pct || 0);
     const cum = (D.sync || []).map((r) => r['ALL cum_pct']).filter((v) => v != null).pop();
     const kpi = {
-      ret, pnl: d3.sum(trips, (t) => t.net_pnl || 0), n, win: n ? trips.filter((t) => (t.gross_pnl || 0) > 0).length / n : null,
-      pos: positions.length, unr: d3.sum(positions, (p) => p.unrealized_pnl || 0),
+      ret, n, win: n ? trips.filter((t) => winOf(t) > 0).length / n : null, ...tradeStats(trips),
+      pos: positions.length, unr: d3.sum(positions, (p) => p.unrealized_pct || 0),
       check: cum == null ? '待同步' : Math.abs(ret - cum) <= 0.00005 * Math.max(1, n) + 1e-7 ? '一致' : '不一致',
     };
     // 每趟報酬依出場日累加，總績效是全部策略加總
@@ -583,6 +675,8 @@
     let c = 0;
     const dayTot = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.d);
     const total = dates.map((d) => (c += dayTot.get(d) || 0));
+    // 風控：每支策略現在離自己的高點多少、連虧幾趟
+    strat.forEach((s) => { const v = series.get(s.name); s.nowDD = v ? statsOf(dates, v).nowDD : 0; s.risk = riskOf(s); });
     M = { strat, dates, series, total, positions, lastPosDate, trips, kpi };
     applyDefaults();
   };
@@ -614,8 +708,8 @@
     if (M.dates.length) {
       const d = M.dates[M.dates.length - 1];
       const ts = M.trips.filter((t) => t.d === d);
-      add(F.day(d) + ' 出場 '); add(String(ts.length), 'n'); add(' 趟，淨損益 ');
-      const pnl = d3.sum(ts, (t) => t.net_pnl || 0); add(F.money(pnl) + ' 元', 'n ' + F.tone(pnl)); add('。');
+      add(F.day(d) + ' 出場 '); add(String(ts.length), 'n'); add(' 趟，合計 ');
+      const r = d3.sum(ts, (t) => t.return_pct || 0); add(F.pct(r), 'n ' + F.tone(r)); add('。');
     }
     if (M.positions.length) {
       const worst = M.positions.reduce((a, b) => ((b.unrealized_pct ?? 0) < (a.unrealized_pct ?? 0) ? b : a));
@@ -635,6 +729,50 @@
   };
   // 創新高：累積報酬比之前每一天都高（而且大於 0）的那幾天
   const highsOf = (v) => { const out = []; let top = 0; v.forEach((x, i) => { if (x > top + 1e-9) { out.push(i); top = x; } }); return out; };
+  // 最大回撤、現在離高點多少、上次創新高（一律用每天的數字算，切週、月也不會變）
+  const statsOf = (dates, v) => {
+    const hs = highsOf(v), li = hs[hs.length - 1]; let top = 0, maxDD = 0, nowDD = 0;
+    v.forEach((x) => { top = Math.max(top, x); nowDD = x - top; maxDD = Math.min(maxDD, nowDD); });
+    return { maxDD, nowDD, lastHigh: li != null ? dates[li] : null, atHigh: li === v.length - 1, highs: hs.length };
+  };
+
+  // ---- 週期：日／週／月。週、月取那段最後一個出場日收盤的累積報酬，日期記成那段的第一天 ----
+  const isoOf = (t) => t.toISOString().slice(0, 10);
+  const FREQ = {
+    d: { step: d3.utcDay, key: (iso) => iso, bar: '當天', legend: '每日報酬', walk: '逐日', label: '每日' },
+    w: { step: d3.utcMonday, key: (iso) => isoOf(d3.utcMonday.floor(new Date(iso + 'T00:00:00Z'))), bar: '當週', legend: '每週報酬', walk: '逐週', label: '每週' },
+    m: { step: d3.utcMonth, key: (iso) => iso.slice(0, 7) + '-01', bar: '當月', legend: '每月報酬', walk: '逐月', label: '每月' },
+  };
+  // keys：每段的第一天；idx：那段最後一個出場日在原本序列的位置；groups：那段有哪幾天
+  const byFreq = (dates, f) => {
+    const K = FREQ[f].key, keys = [], idx = [], groups = [];
+    dates.forEach((d, i) => { const k = K(d); if (keys[keys.length - 1] !== k) { keys.push(k); idx.push(i); groups.push([]); } idx[idx.length - 1] = i; groups[groups.length - 1].push(d); });
+    return { keys, idx, groups };
+  };
+  // 提示框標題：11/2–11/6 那週、2026 年 11 月；還沒過完的那段加「到 11/4」
+  const periodName = (f, key, lastDate) => {
+    if (f === 'd') return F.day(key) + ' 收盤後';
+    const t = new Date(key + 'T00:00:00Z');
+    const endIso = isoOf(f === 'w' ? d3.utcDay.offset(t, 4) : d3.utcDay.offset(d3.utcMonth.offset(t, 1), -1));
+    const name = f === 'w' ? F.day(key) + '–' + F.day(endIso) + ' 那週' : t.getUTCFullYear() + ' 年 ' + (t.getUTCMonth() + 1) + ' 月';
+    const today = isoOf(new Date(Date.now() + TPE));
+    return name + (today <= endIso && lastDate < endIso ? '（到 ' + F.day(lastDate) + '）' : '');
+  };
+  // 依現在選的週期把每天的序列併起來再畫
+  const plotF = (box, empty, o) => {
+    if (freq === 'd') return plot(box, empty, { ...o, note: o.note && ((i) => o.note([o.dates[i]])) });
+    const P = byFreq(o.dates, freq), pick = (v) => P.idx.map((i) => v[i]);
+    // 創新高、距高點、回撤照每天算：那段收盤要站上之前每一天的最高點才算創新高
+    let top = 0; const tops = o.main.v.map((x) => (top = Math.max(top, x))), ddD = o.main.v.map((x, i) => x - tops[i]);
+    const hi = P.idx.map((_, j) => j).filter((j) => ddD[P.idx[j]] > -1e-9 && tops[P.idx[j]] > (j ? tops[P.idx[j - 1]] : 0) + 1e-9);
+    const ddLow = P.idx.map((ii, j) => d3.min(ddD.slice(j ? P.idx[j - 1] + 1 : 0, ii + 1)));
+    return plot(box, empty, {
+      ...o, unit: freq, n: o.dates.length, dates: P.keys, from: o.from && FREQ[freq].key(o.from), hi, dd: pick(ddD), ddLow,
+      main: { ...o.main, v: pick(o.main.v) }, lines: (o.lines || []).map((l) => ({ ...l, v: pick(l.v) })),
+      when: (i) => periodName(freq, P.keys[i], o.dates[P.idx[i]]),
+      note: o.note && ((i) => o.note(P.groups[i])),
+    });
+  };
   const highLine = (box, v, dates) => {
     const hs = highsOf(v);
     if (!hs.length) return;
@@ -647,16 +785,25 @@
   const renderKpis = () => {
     const k = M.kpi;
     const set = (id, text, tone, unit) => { const e = $(id); e.replaceChildren(document.createTextNode(text)); e.className = 'kpi-v ' + (tone || ''); if (unit) e.appendChild(el('small', null, unit)); };
-    set('k-pnl', F.money(k.pnl), F.tone(k.pnl), '元');
     const n = k.n;
+    const sub = (id, parts) => { const e = $(id); e.replaceChildren(...parts.map((p) => (typeof p === 'string' ? document.createTextNode(p) : el('span', 'n ' + (p[1] || ''), p[0])))); };
     const W = d3.sum(M.strat, (s) => s.w), L = d3.sum(M.strat, (s) => s.l), T = d3.sum(M.strat, (s) => s.t);
     set('k-win', n ? F.rate(k.win) : '—');
     $('k-wl').textContent = n ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '還沒有出場';
+    set('k-pf', n ? (k.pf === Infinity ? '無虧損' : ratio(k.pf)) : '—', k.pf != null && k.pf !== Infinity ? (k.pf >= 1 ? 'up' : 'down') : '');
+    sub('k-pf-s', k.payoff != null ? ['賺賠比 ', [ratio(k.payoff)]] : [n ? '還沒有賠的趟' : '還沒有出場']);
+    set('k-st', k.streak ? String(k.streak.n) : '—', k.streak ? (k.streak.w > 0 ? 'up' : 'down') : '', k.streak ? (k.streak.w > 0 ? '連勝' : '連敗') : '');
+    sub('k-st-s', n ? ['最長 ' + k.maxW + ' 連勝・' + k.maxL + ' 連敗'] : ['還沒有出場']);
     set('k-pos', F.int(k.pos), '', '檔');
-    $('k-pos-s').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤' : '';
-    set('k-unr', F.money(k.unr), F.tone(k.unr), '元');
-    const cost = d3.sum(M.positions, (p) => (p.avg_cost || 0) * (p.shares || 0));
-    $('k-unr-s').textContent = cost ? '佔持倉成本 ' + F.pct(k.unr / cost) : '';
+    sub('k-pos-s', k.pos ? ['未實現 ', [F.pct(k.unr), F.tone(k.unr)]] : [M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤' : '']);
+    $('k-pos-s').title = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤，各檔未實現 % 加總' : '';
+    // 風控：最嚴重的燈號，下面列出是哪幾支
+    const rs = M.strat.filter((s) => s.risk), bad = rs.filter((s) => s.risk.lv).sort((a, b) => b.risk.lv - a.risk.lv);
+    const kr = $('k-risk'); kr.replaceChildren();
+    if (!rs.length) kr.textContent = '—';
+    else if (!bad.length) kr.appendChild(riskTag({ lv: 0, label: '全部安全', text: rs.length + ' 支有交易或持倉的策略都在上限內' }));
+    else [2, 1].forEach((lv) => { const c = bad.filter((s) => s.risk.lv === lv).length; if (c) kr.appendChild(riskTag({ lv, label: c + ' 支' + RISK_L[lv], text: '' })); });
+    $('k-risk-s').textContent = bad.length ? bad.map((s) => s.short).join('、') : rs.length ? rs.length + ' 支有交易或持倉的都在上限內' : '';
     const chk = $('k-check'); const s = k.check;
     chk.textContent = s; chk.className = 'pill' + (s === '一致' ? ' ok' : s === '不一致' ? ' bad' : '');
   };
@@ -706,105 +853,243 @@
   };
 
   // ---- 走勢圖：一條粗的主線（總績效或單一策略），可以再疊細線 ----
+  // 參考 TradeTrack-Pro：階梯線（已實現報酬只在出場那天變動）、金色創新高點、
+  // 每天的報酬柱（和線同一個 % 軸）、下方回撤圖（離最高點差多少）
   const hiders = new Map();
   const plot = (box, empty, o) => {
     if (!box.clientWidth) return;  // 這一層沒顯示時不畫，切回來再畫
     box.querySelectorAll('svg, .tip').forEach((n) => n.remove());
-    if (!o.dates.length) { empty.hidden = false; empty.textContent = o.emptyText; box.classList.remove('short'); return; }
+    if (!o.dates.length) { empty.hidden = false; empty.textContent = o.emptyText; box.classList.remove('short'); return null; }
     empty.hidden = true;
-    box.classList.toggle('short', o.dates.length < 3);
+    box.classList.toggle('short', (o.n ?? o.dates.length) < 3);  // 只有一兩天資料時圖矮一點（看每天的數量，切週、月不會變矮）
     const css = getComputedStyle(document.documentElement);
     const col = (n) => css.getPropertyValue(n).trim();
     const W = Math.max(280, box.clientWidth), H = box.clientHeight || 300;
-    // 起點放在第一個出場日的前一天，從 0 開始
-    const t0 = d3.utcDay.offset(new Date(o.dates[0] + 'T00:00:00Z'), -1);
-    const xs = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
-    const lines = (o.lines || []).map((l) => ({ ...l, v: [0, ...l.v] }));
-    const mainV = [0, ...o.main.v];
-    const all = [mainV, ...lines.map((l) => l.v)].flat();
+    // o.unit：日／週／月（週、月的日期是那段的第一天）。起點放在第一段的前一段，從 0 開始
+    const U = FREQ[o.unit || 'd'], daily = U === FREQ.d;
+    const t0 = U.step.offset(new Date(o.dates[0] + 'T00:00:00Z'), -1);
+    const XS = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
+    const MV = [0, ...o.main.v];
+    // 創新高和回撤一律用全部歷史算，切期間也不會變
+    // 週、月由 plotF 傳每天算好的 hi、dd、ddLow 進來（只看收盤會把沒過前高的週誤標成創新高）
+    const HI = new Set((o.hi || highsOf(o.main.v)).map((i) => i + 1));
+    let top = 0; const DD = o.dd ? [0, ...o.dd] : MV.map((v) => { top = Math.max(top, v); return v - top; });
+    const LOW = o.ddLow ? [0, ...o.ddLow] : DD;  // 下方回撤圖：週、月畫那段裡最深的一天
+    const DAY = MV.map((v, i) => (i ? v - MV[i - 1] : 0));
+    // 期間：從 o.from 那天開始，前一個點留著當起點
+    let s0 = 0;
+    if (o.from) { const k = o.dates.findIndex((d) => d >= o.from); s0 = k <= 0 ? 0 : k; }
+    const cut = (a) => a.slice(s0);
+    const xs = cut(XS), mainV = cut(MV), dd = cut(DD), low = cut(LOW), day = cut(DAY);
+    const lines = (o.lines || []).map((l) => ({ ...l, v: cut([0, ...l.v]) }));
+    // 起點放在期間開始的前一天（那時的數字就是前一個點的數字），不要拉回很久以前的出場日
+    if (s0 > 0) { const f = U.step.offset(new Date((daily ? o.from : o.dates[s0]) + 'T00:00:00Z'), -1); if (f > xs[0]) xs[0] = f; }
+    const full = (i) => i + s0;  // 畫面上的第 i 點 → 全部資料的第幾點
+
+    const ddH = H >= 260 ? Math.round(Math.min(72, H * 0.18)) : 0;
+    const axisY = H - 26, mainBottom = axisY - (ddH ? ddH + 12 : 0);
+    const all = [mainV, ...lines.map((l) => l.v), day.slice(1)].flat();
     let lo = Math.min(0, d3.min(all)), hi = Math.max(0, d3.max(all));
     if (hi - lo < 0.01) { hi += 0.005; lo -= 0.005; }
-    const y = d3.scaleLinear([lo, hi], [H - 26, 8]).nice(5);
+    const y = d3.scaleLinear([lo, hi], [mainBottom, 8]).nice(5);
     const ticks = y.ticks(5);
     const step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 0.01;
     const fy = (v) => (v === 0 ? '0%' : (v > 0 ? '' : MINUS) + Math.abs(v * 100).toFixed(step < 0.01 ? 1 : 0) + '%');
-    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', o.label);
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
     const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--num)');
     let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
+    if (ddH) [ '回撤', pct1(Math.min(0, d3.min(LOW))) ].forEach((t) => { probe.text(t); left = Math.max(left, probe.node().getComputedTextLength()); });
     const endV = mainV[mainV.length - 1];
     const endText = F.pct(endV);
     probe.text(endText); const endW = probe.node().getComputedTextLength(); probe.remove();
     const m = { l: left + 10, r: endW + 14 };
-    const x = d3.scaleUtc(d3.extent(xs), [m.l, W - m.r]);
+    // 階梯線最後一天要有寬度才看得到，右邊多留一小段（至少一天，或整段的 3%）
+    // 週、月就多留一整段
+    const xEnd = daily ? d3.utcDay.offset(xs[xs.length - 1], Math.max(1, Math.round((xs[xs.length - 1] - xs[0]) / 864e5 * 0.03))) : U.step.offset(xs[xs.length - 1], 1);
+    const xsP = [...xs, xEnd], ext = (a) => [...a, a[a.length - 1]];
+    const x = d3.scaleUtc([xs[0], xEnd], [m.l, W - m.r]);
+    const accent = col('--accent'), surface = col('--surface'), peak = col('--peak'), up = col('--up'), down = col('--down');
+    const defs = svg.append('defs');
     const g = svg.append('g').style('font-family', 'var(--num)').attr('font-size', 12);
     g.selectAll('line.gl').data(ticks).join('line').attr('class', 'gl').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y)
-      .attr('stroke', (t) => (t === 0 ? col('--faint') : col('--grid'))).attr('stroke-width', 1);
+      .attr('stroke', (t) => (t === 0 ? col('--zero') : col('--grid'))).attr('stroke-width', 1);
     g.selectAll('text.yt').data(ticks).join('text').attr('class', 'yt').attr('x', m.l - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', col('--muted')).text(fy);
     const span = (W - m.l - m.r);
-    const xt = xs.length <= 7 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
-    g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
-    const line = d3.line().x((d, i) => x(xs[i])).y((d) => y(d));
-    const accent = col('--accent'), surface = col('--surface');
+    const nT = Math.max(3, Math.min(7, Math.floor(span / 75)));
+    // 週、月的刻度只放在有資料的那幾段上，太多就隔幾個放一個（最後一個一定留）
+    const ks = xs.slice(1), every = Math.ceil(ks.length / nT);
+    const xt = xs.length <= 8 ? ks : daily ? x.ticks(nT) : ks.filter((d, i) => (ks.length - 1 - i) % every === 0);
+    const xLab = (t) => (U === FREQ.m ? (t.getUTCMonth() ? '' : t.getUTCFullYear() + '年') + (t.getUTCMonth() + 1) + '月' : (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
+    g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text(xLab);
+
+    // 每天的報酬柱：紅賺綠賠，淡淡的放在線後面
+    const gap = d3.min(xsP.slice(1).map((t, i) => x(t) - x(xsP[i]))) || span;
+    const bw = Math.max(3, Math.min(daily ? 14 : 24, gap * 0.5));
+    g.append('g').attr('class', 'bars').selectAll('rect').data(day.map((v, i) => ({ v, i })).filter((d) => d.i > 0 && d.v !== 0)).join('rect')
+      .attr('x', (d) => x(xs[d.i]) + 2).attr('width', bw)
+      .attr('y', (d) => Math.min(y(0), y(d.v))).attr('height', (d) => Math.max(1, Math.abs(y(d.v) - y(0))))
+      .attr('rx', Math.min(2, bw / 3)).attr('fill', (d) => (d.v > 0 ? up : down)).attr('fill-opacity', 0.38);
+
+    const line = d3.line().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y((d) => y(d));
     // 主線下面淡淡一層，從線往 0 軸漸淡
     const gid = 'fade-' + box.id;
-    const grad = svg.append('defs').append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
-    grad.append('stop').attr('offset', '0%').attr('stop-color', accent).attr('stop-opacity', 0.22);
+    const grad = defs.append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
+    grad.append('stop').attr('offset', '0%').attr('stop-color', accent).attr('stop-opacity', 0.2);
     grad.append('stop').attr('offset', '100%').attr('stop-color', accent).attr('stop-opacity', 0.02);
-    g.append('path').datum(mainV).attr('d', d3.area().x((d, i) => x(xs[i])).y0(y(0)).y1((d) => y(d))).attr('fill', `url(#${gid})`);
-    lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
-    g.append('path').datum(mainV).attr('d', line).attr('fill', 'none').attr('stroke', accent).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
-    // 創新高的每一天在主線上加一個點（外圈用卡片底色，壓在線上也看得出來）
-    const highs = highsOf(o.main.v).map((i) => i + 1);
-    const isHigh = new Set(highs);
+    g.append('path').datum(ext(mainV)).attr('d', d3.area().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y0(y(0)).y1((d) => y(d))).attr('fill', `url(#${gid})`);
+    lines.forEach((l) => g.append('path').datum(ext(l.v)).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
+    // 深色底時主線加一點光暈
+    let glow = null;
+    if (themeNow() === 'dark') {
+      glow = 'glow-' + box.id;
+      const f = defs.append('filter').attr('id', glow).attr('x', '-5%').attr('y', '-20%').attr('width', '110%').attr('height', '140%');
+      f.append('feGaussianBlur').attr('in', 'SourceGraphic').attr('stdDeviation', 3).attr('result', 'b');
+      const mg = f.append('feMerge'); mg.append('feMergeNode').attr('in', 'b'); mg.append('feMergeNode').attr('in', 'SourceGraphic');
+    }
+    g.append('path').datum(ext(mainV)).attr('d', line).attr('fill', 'none').attr('stroke', accent).attr('stroke-width', 2.5).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('filter', glow ? `url(#${glow})` : null);
+    // 創新高的每一天在主線上加一個金色的點（外圈用卡片底色，壓在線上也看得出來）
+    const highs = mainV.map((v, i) => i).filter((i) => HI.has(full(i)));
     g.append('g').attr('class', 'highs').selectAll('circle').data(highs).join('circle')
-      .attr('cx', (i) => x(xs[i])).attr('cy', (i) => y(mainV[i])).attr('r', 4.5).attr('fill', accent).attr('stroke', surface).attr('stroke-width', 2);
-    const lx = x(xs[xs.length - 1]), ly = y(endV);
-    g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
-    svg.attr('aria-label', `${o.label}。最新 ${endText}${highs.length ? `，創新高 ${highs.length} 次，最近一次 ${F.day(o.dates[highs[highs.length - 1] - 1])}` : ''}。可以用左右鍵逐日查看。`);
+      .attr('cx', (i) => x(xs[i])).attr('cy', (i) => y(mainV[i])).attr('r', 4.5).attr('fill', peak).attr('stroke', surface).attr('stroke-width', 2);
+    const lx = x(xEnd), ly = y(endV);
+    g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? up : endV < 0 ? down : col('--text')).text(endText);
+
+    // 下方回撤圖：0 在上面，往下是離最高點跌了多少
+    const minDD = d3.min(LOW);
+    if (ddH) {
+      const yd = d3.scaleLinear([Math.min(minDD, -0.01), 0], [axisY - 2, axisY - ddH]);
+      const dg = g.append('g').attr('class', 'dd');
+      dg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', yd(0)).attr('y2', yd(0)).attr('stroke', col('--zero')).attr('stroke-width', 1);
+      dg.append('path').datum(ext(low)).attr('d', d3.area().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y0(yd(0)).y1((d) => yd(d))).attr('fill', down).attr('fill-opacity', 0.28);
+      dg.append('path').datum(ext(low)).attr('d', d3.line().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y((d) => yd(d))).attr('fill', 'none').attr('stroke', down).attr('stroke-width', 1.5).attr('stroke-opacity', 0.9);
+      dg.append('text').attr('x', m.l - 8).attr('y', yd(0) + 12).attr('text-anchor', 'end').attr('font-size', 11).style('font-family', 'var(--font)').attr('fill', col('--muted')).text('回撤');
+      if (minDD < 0) dg.append('text').attr('x', m.l - 8).attr('y', axisY - 4).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', col('--muted')).text(pct1(minDD));
+    }
+    const stats = statsOf(o.dates, o.main.v);
+    svg.attr('aria-label', `${o.label}${daily ? '' : '（' + U.label + '）'}。最新 ${endText}${HI.size ? `，創新高 ${HI.size} 次，最近一次 ${o.when ? o.when(HI.size && [...HI].pop() - 1) : F.day(stats.lastHigh)}` : ''}${minDD < 0 ? `，最大回撤 ${F.pct(minDD)}` : ''}。可以用左右鍵${U.walk}查看，Shift＋左右鍵選一段看區間報酬。`);
 
     // 滑過去（手機點一下、鍵盤左右鍵）看那一天每條線的數字
     const tip = d3.select(box).append('div').attr('class', 'tip').attr('aria-live', 'polite').style('display', 'none');
-    const rule = g.append('line').attr('y1', 8).attr('y2', H - 26).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
+    const rule = g.append('line').attr('y1', 8).attr('y2', axisY).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
     const dots = g.append('g').style('display', 'none');
     const bis = d3.bisector((d) => d).center;
     let at = null;
     const show = (i) => {
       at = i;
-      const xi = x(xs[i]);
+      const xi = x(xs[i]), fi = full(i);
       rule.style('display', null).attr('x1', xi).attr('x2', xi);
       dots.style('display', null).selectAll('*').remove();
-      [...lines.map((l) => ({ c: l.color, v: l.v[i], r: 3.5 })), { c: accent, v: mainV[i], r: 5 }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', p.r).attr('fill', p.c).attr('stroke', surface).attr('stroke-width', 2));
+      [...lines.map((l) => ({ c: l.color, v: l.v[i], r: 3.5 })), { c: HI.has(fi) ? peak : accent, v: mainV[i], r: 5 }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', p.r).attr('fill', p.c).attr('stroke', surface).attr('stroke-width', 2));
       tip.style('display', null).selectAll('*').remove();
       const hd = tip.append('div').attr('class', 'd');
-      hd.append('span').text(F.day(o.dates[i - 1]) + ' 收盤後');
-      if (isHigh.has(i)) hd.append('span').attr('class', 'hi-tag').text('創新高');
+      hd.append('span').text(o.when ? o.when(fi - 1) : F.day(o.dates[fi - 1]) + ' 收盤後');
+      if (HI.has(fi)) hd.append('span').attr('class', 'hi-tag').text('創新高');
       const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
       row(swatch(accent, '', 3), o.main.name, mainV[i], 'tot');
+      row(blank(), U.bar, day[i], 'sub');
       lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.color, l.dash), l.short, l.v[i]));
-      if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(i - 1));
-      const bw = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
-      const scale = bw / W;
-      let left = xi * scale + 14; if (left + tw > bw) left = xi * scale - tw - 14;
-      tip.style('left', Math.max(0, left) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
+      if (!HI.has(fi) && dd[i] < 0) { const r = tip.append('div').attr('class', 'r dd'); r.append('span'); r.append('span').text('距高點'); r.append('span').attr('class', 'n down').text(F.pct(dd[i])); }
+      if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(fi - 1));
+      const bwid = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+      const scale = bwid / W;
+      let lft = xi * scale + 14; if (lft + tw > bwid) lft = xi * scale - tw - 14;
+      tip.style('left', Math.max(0, lft) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
     };
-    const move = (ev) => { const [px] = d3.pointer(ev, svg.node()); show(Math.max(1, bis(xs, x.invert(px)))); };
-    const hide = () => { at = null; tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
+    const idxAt = (ev) => { const [px] = d3.pointer(ev, svg.node()); return Math.max(1, bis(xs, x.invert(px))); };
+    const hideTip = () => { at = null; tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
+
+    // ---- 拖一段看那段期間的報酬（參考 TradeTrack-Pro）：滑鼠拖曳、手機長按再拖、鍵盤 Shift＋左右 ----
+    const selR = g.insert('rect', '.bars').attr('class', 'sel').attr('y', 8).attr('height', mainBottom - 8).attr('fill', accent).attr('fill-opacity', 0.12).style('display', 'none');
+    const selE = [0, 1].map(() => g.insert('line', '.bars').attr('y1', 8).attr('y2', axisY).attr('stroke', accent).attr('stroke-opacity', 0.6).attr('stroke-dasharray', '3 3').style('display', 'none'));
+    const sel = { a: null, b: null, drag: null, x0: 0, timer: 0 };
+    const nameAt = (i) => { const k = o.dates[full(i) - 1]; return daily ? F.day(k) : U === FREQ.w ? F.day(k) + ' 那週' : Number(k.slice(5, 7)) + ' 月'; };
+    const drawSel = () => {
+      const a = Math.min(sel.a, sel.b), b = Math.max(sel.a, sel.b);
+      const x1 = x(xs[a]), x2 = x(Math.min(U.step.offset(xs[b], 1), xsP[b + 1]));  // 只塗到選的最後那一天（週、月）結束
+      selR.style('display', null).attr('x', x1).attr('width', Math.max(2, x2 - x1));
+      selE[0].style('display', null).attr('x1', x1).attr('x2', x1); selE[1].style('display', null).attr('x1', x2).attr('x2', x2);
+      hideTip();
+      tip.style('display', null).selectAll('*').remove();
+      const hd = tip.append('div').attr('class', 'd');
+      hd.append('span').text((a === b ? nameAt(a) : nameAt(a) + ' 到 ' + nameAt(b)) + '・' + (b - a + 1) + ' 個' + (daily ? '出場日' : U === FREQ.w ? '週' : '月'));
+      const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
+      row(swatch(accent, '', 3), '這段' + o.main.name, mainV[b] - mainV[a - 1], 'tot');
+      // 這段期間裡最多跌了多少（從這段開始時的數字算高點）
+      let pk = mainV[a - 1], worst = 0; for (let i = a; i <= b; i++) { pk = Math.max(pk, mainV[i]); worst = Math.min(worst, mainV[i] - pk); }
+      if (worst < 0) { const r = tip.append('div').attr('class', 'r dd'); r.append('span'); r.append('span').text('這段最大回撤'); r.append('span').attr('class', 'n down').text(F.pct(worst)); }
+      lines.map((l) => ({ l, v: l.v[b] - l.v[a - 1] })).filter((d) => Math.abs(d.v) > 1e-9).sort((p, q) => q.v - p.v).forEach((d) => row(swatch(d.l.color, d.l.dash), d.l.short, d.v));
+      tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text('點圖上任一處取消');
+      const scale = box.clientWidth / W, tw = tip.node().offsetWidth;
+      let lft = ((x1 + x2) / 2) * scale - tw / 2; lft = Math.max(0, Math.min(box.clientWidth - tw, lft));
+      tip.style('left', lft + 'px').style('top', '8px');
+      svg.attr('aria-description', `已選 ${a === b ? nameAt(a) : nameAt(a) + ' 到 ' + nameAt(b)}，${o.main.name} ${F.pct(mainV[b] - mainV[a - 1])}`);
+    };
+    const clearSel = () => { sel.a = sel.b = null; sel.drag = null; clearTimeout(sel.timer); selR.style('display', 'none'); selE.forEach((e) => e.style('display', 'none')); svg.attr('aria-description', null); };
+    const hide = () => { clearSel(); hideTip(); };
     svg.attr('tabindex', 0).style('touch-action', 'pan-y');
-    svg.on('pointermove', move).on('pointerdown', move).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') hide(); });
-    svg.on('focus', () => show(at || xs.length - 1)).on('blur', hide);
+    svg.on('pointerdown', (ev) => {
+      const i = idxAt(ev), [px, py] = d3.pointer(ev, svg.node());
+      if (sel.a != null) { clearSel(); hideTip(); if (ev.pointerType !== 'touch') { sel.drag = 'maybe'; sel.x0 = px; sel.a = sel.b = i; } return; }
+      if (ev.pointerType === 'mouse') { if (ev.button !== 0) return; sel.drag = 'maybe'; sel.x0 = px; sel.a = sel.b = i; show(i); return; }
+      // 手機：先照舊顯示那天的數字；按住不動 0.4 秒才開始選一段
+      show(i); sel.x0 = px; sel.y0 = py;
+      sel.timer = setTimeout(() => { sel.drag = 'on'; sel.a = sel.b = i; drawSel(); if (navigator.vibrate) navigator.vibrate(10); }, 400);
+    });
+    svg.on('pointermove', (ev) => {
+      const i = idxAt(ev), [px, py] = d3.pointer(ev, svg.node());
+      if (sel.drag === 'maybe' && Math.abs(px - sel.x0) > 5) { sel.drag = 'on'; try { svg.node().setPointerCapture(ev.pointerId); } catch (e) { /* 不支援就算了 */ } }
+      if (sel.drag === 'on') { if (i !== sel.b || selR.style('display') === 'none') { sel.b = i; drawSel(); } return; }
+      if (ev.pointerType === 'touch' && sel.timer && (Math.abs(px - sel.x0) > 8 || Math.abs(py - sel.y0) > 8)) { clearTimeout(sel.timer); sel.timer = 0; }
+      if (sel.a == null || sel.drag === 'maybe') show(i);
+    });
+    svg.on('pointerup', () => { clearTimeout(sel.timer); sel.timer = 0; if (sel.drag === 'maybe') { sel.a = sel.b = null; } sel.drag = null; });
+    svg.on('pointercancel', () => { clearTimeout(sel.timer); sel.timer = 0; if (sel.drag === 'on' && sel.a != null) drawSel(); sel.drag = null; });
+    svg.on('pointerleave', (ev) => { if (ev.pointerType !== 'touch' && sel.a == null) hideTip(); });
+    svg.on('focus', () => { if (sel.a == null) show(at || xs.length - 1); }).on('blur', hide);
     svg.on('keydown', (ev) => {
       const last = xs.length - 1;
+      if (ev.shiftKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
+        ev.preventDefault();
+        if (sel.a == null) { sel.a = sel.b = at || last; }
+        sel.b = Math.max(1, Math.min(last, sel.b + (ev.key === 'ArrowLeft' ? -1 : 1))); drawSel(); return;
+      }
       const next = { ArrowLeft: (at || last) - 1, ArrowRight: (at || last) + 1, Home: 1, End: last }[ev.key];
-      if (next != null) { ev.preventDefault(); show(Math.max(1, Math.min(last, next))); }
-      else if (ev.key === 'Escape' && at != null) { ev.preventDefault(); hide(); }
+      if (next != null) { ev.preventDefault(); clearSel(); show(Math.max(1, Math.min(last, next))); }
+      else if (ev.key === 'Escape' && (at != null || sel.a != null)) { ev.preventDefault(); hide(); }
     });
     hiders.set(box.id, hide);
+    return stats;
+  };
+  // 圖上方那行：最大回撤、上次創新高
+  const perfMeta = (el_, st) => {
+    el_.replaceChildren();
+    if (!st) return;
+    const add = (t, cls) => el_.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    add('最大回撤 '); add(st.maxDD < 0 ? F.pct(st.maxDD) : '0.00%', 'n' + (st.maxDD < 0 ? ' down' : ''));
+    if (st.lastHigh) { add('・'); if (st.atHigh) add('現在就在最高點', 'n'); else { add('上次創新高 ' + F.day(st.lastHigh) + '，'); add(String(daysSince(st.lastHigh)), 'n'); add(' 天沒創新高'); } }
+  };
+
+  // 期間（全部／近一月／近三月／今年）和週期（日／週／月）：總覽和策略明細共用，記住上次選的
+  let range = ['all', '1m', '3m', 'ytd'].includes(store.get('qtw-range')) ? store.get('qtw-range') : 'all';
+  let freq = FREQ[store.get('qtw-freq')] ? store.get('qtw-freq') : 'd';
+  const rangeFrom = (r) => {
+    if (r === 'all' || !M.dates.length) return null;
+    const last = new Date(M.dates[M.dates.length - 1] + 'T00:00:00Z');
+    const d = r === 'ytd' ? new Date(Date.UTC(last.getUTCFullYear(), 0, 1)) : d3.utcMonth.offset(last, r === '1m' ? -1 : -3);
+    return d.toISOString().slice(0, 10);
+  };
+  const renderRange = () => {
+    document.querySelectorAll('.perf-ctl button[data-r]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.r === range)));
+    document.querySelectorAll('.perf-ctl button[data-f]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.f === freq)));
+    document.querySelectorAll('[data-lg="bar"]').forEach((n) => { n.textContent = FREQ[freq].legend; });
   };
 
   const renderChart = () => {
     const lines = [];
     ordered().forEach(({ items }) => items.forEach((s) => { if (M.series.has(s.name) && !hidden.has(s.name)) lines.push({ color: s.color, dash: s.dash, short: s.short, v: M.series.get(s.name) }); }));
-    plot($('chart'), $('chart-empty'), { dates: M.dates, main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
+    renderRange();
+    plotF($('chart'), $('chart-empty'), { dates: M.dates, from: rangeFrom(range), main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
+    perfMeta($('perf-meta'), M.dates.length ? statsOf(M.dates, M.total) : null);
   };
 
   // ---- 獲利日曆：每天＝當天出場各趟 return_pct 加總（和走勢圖每天的漲跌一樣） ----
@@ -815,7 +1100,7 @@
   const monthAdd = (ym, k) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + k, 1)); return d.toISOString().slice(0, 7); };
   const renderCalendar = () => {
     const today = new Date(Date.now() + TPE).toISOString().slice(0, 10);
-    const days = d3.rollup(M.trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, p: d3.sum(v, (t) => t.net_pnl || 0), by: d3.rollups(v, (w) => d3.sum(w, (t) => t.return_pct || 0), (t) => t.strategy) }), (t) => t.d);
+    const days = d3.rollup(M.trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, by: d3.rollups(v, (w) => d3.sum(w, (t) => t.return_pct || 0), (t) => t.strategy) }), (t) => t.d);
     const lastData = M.dates.length ? M.dates[M.dates.length - 1].slice(0, 7) : today.slice(0, 7);
     const lo = M.dates.length ? M.dates[0].slice(0, 7) : today.slice(0, 7);
     const hi = today.slice(0, 7) > lastData ? today.slice(0, 7) : lastData;
@@ -835,27 +1120,27 @@
       if (!row || wd === 1) { row = [null, null, null, null, null]; rows.push(row); }
       row[wd - 1] = calMonth + '-' + String(d).padStart(2, '0');
     }
-    const value = (cell, v, n, p) => {
+    const value = (cell, v, n) => {
       const pv = el('span', 'pv'); pv.appendChild(el('span', 'l', F.pct(v))); pv.appendChild(el('span', 's', pct1(v))); cell.appendChild(pv);
-      cell.appendChild(el('span', 'ps', n + ' 趟・' + F.money(p)));
+      cell.appendChild(el('span', 'ps', n + ' 趟'));
     };
     rows.forEach((r) => {
-      let wr = 0, wn = 0, wp = 0;
+      let wr = 0, wn = 0;
       r.forEach((iso) => {
         if (!iso) { grid.appendChild(el('div', 'cal-d empty')); return; }
         const o = days.get(iso), dn = String(Number(iso.slice(8)));
         // 開始有實盤紀錄之前、和今天之後的日子變淡
         const cls = 'cal-d' + (iso > today ? ' future' : '') + (M.dates.length && iso < M.dates[0] ? ' pre' : '') + (iso === today ? ' today' : '');
         if (!o) { const c = el('div', cls); c.appendChild(el('span', 'dn', dn)); grid.appendChild(c); return; }
-        wr += o.r; wn += o.n; wp += o.p;
+        wr += o.r; wn += o.n;
         const c = el('button', cls + ' tint ' + tintOf(o.r)); c.type = 'button'; c.dataset.day = iso;
-        c.setAttribute('aria-label', `${F.day(iso)}（${WD[new Date(iso + 'T00:00:00Z').getUTCDay()]}）${F.pct(o.r)}，${o.n} 趟，淨 ${F.money(o.p)} 元`);
-        c.appendChild(el('span', 'dn', dn)); value(c, o.r, o.n, o.p);
+        c.setAttribute('aria-label', `${F.day(iso)}（${WD[new Date(iso + 'T00:00:00Z').getUTCDay()]}）${F.pct(o.r)}，${o.n} 趟`);
+        c.appendChild(el('span', 'dn', dn)); value(c, o.r, o.n);
         grid.appendChild(c);
       });
       const wFirst = r.find(Boolean), wLast = r.filter(Boolean).pop();
       const w = el('div', 'cal-d wk' + (wn ? ' tint ' + tintOf(wr) : wFirst > today ? ' future' : M.dates.length && wLast < M.dates[0] ? ' pre' : ''));
-      if (wn) { w.appendChild(el('span', 'dn', '週')); value(w, wr, wn, wp); }
+      if (wn) { w.appendChild(el('span', 'dn', '週')); value(w, wr, wn); }
       grid.appendChild(w);
     });
 
@@ -865,9 +1150,9 @@
     const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
     if (!inMonth.length) add('這個月還沒有出場紀錄。');
     else {
-      const r = d3.sum(inMonth, (o) => o.r), p = d3.sum(inMonth, (o) => o.p);
+      const r = d3.sum(inMonth, (o) => o.r), nt = d3.sum(inMonth, (o) => o.n);
       const up = inMonth.filter((o) => o.r > 0).length, dn = inMonth.filter((o) => o.r < 0).length;
-      add(m + ' 月 '); add(F.pct(r), 'n ' + F.tone(r)); add('・出場 '); add(String(inMonth.length), 'n'); add(` 天（${up} 天賺、${dn} 天賠）・淨 `); add(F.money(p) + ' 元', 'n ' + F.tone(p));
+      add(m + ' 月 '); add(F.pct(r), 'n ' + F.tone(r)); add('・出場 '); add(String(inMonth.length), 'n'); add(` 天、${nt} 趟（${up} 天賺、${dn} 天賠）`);
     }
     calTip.days = days;
   };
@@ -887,7 +1172,6 @@
     const row = (sw, name, v, cls) => { const r = el('div', 'r ' + (cls || '')); r.appendChild(sw); r.appendChild(el('span', null, name)); r.appendChild(el('span', 'n ' + F.tone(v), F.pct(v))); tip.appendChild(r); };
     row(swatch(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), '', 3), '當天合計', o.r, 'tot');
     o.by.slice().sort((a, b) => b[1] - a[1]).forEach(([name, v]) => { const st = M.strat.find((x) => x.name === name); row(st && st.color ? swatch(st.color, st.dash) : blank(), st ? st.short : shortOf(name), v); });
-    const f = el('div', 'd'); f.style.margin = '4px 0 0'; f.textContent = '淨損益 ' + F.money(o.p) + ' 元'; tip.appendChild(f);
     const cb = card.getBoundingClientRect(), bb = btn.getBoundingClientRect();
     const tw = tip.offsetWidth, th = tip.offsetHeight;
     let left = bb.left - cb.left + bb.width / 2 - tw / 2;
@@ -899,16 +1183,82 @@
   const calHide = () => { const t = document.querySelector('.cal .tip'); if (t) t.style.display = 'none'; document.querySelectorAll('.cal-d.on').forEach((b) => b.classList.remove('on')); };
   hiders.set('cal', calHide);
 
+  // ---- 策略比較泡泡圖（參考 TradeTrack-Pro）：橫軸勝率、縱軸獲利因子、大小＝趟數、顏色＝分類 ----
+  // 還沒賠過的策略獲利因子算不出來，放在最上面一排「無虧損」
+  const renderBubbles = () => {
+    const box = $('bub'), empty = $('bub-empty');
+    if (!box.clientWidth) return;
+    box.querySelectorAll('svg, .tip').forEach((n) => n.remove());
+    const data = M.strat.filter((s) => s.n).map((s) => ({ s, win: s.w / s.n, pf: s.pf }));
+    if (!data.length) { empty.hidden = false; empty.textContent = '還沒有出場紀錄，有交易的策略會出現在這裡。'; return; }
+    empty.hidden = true;
+    const css = getComputedStyle(document.documentElement), col = (n) => css.getPropertyValue(n).trim();
+    const W = box.clientWidth - parseFloat(getComputedStyle(box).paddingLeft) * 2, H = box.clientHeight - 12;
+    const fin = data.filter((d) => d.pf != null && d.pf !== Infinity).map((d) => d.pf), hasInf = data.some((d) => d.pf === Infinity);
+    const rMax = Math.min(26, W / 22), m = { l: 44, r: rMax + 10, t: hasInf ? 34 : 12, b: 30 };
+    const lo = Math.min(0.4, Math.floor((d3.min(data, (d) => d.win) - 0.1) * 10) / 10);
+    const x = d3.scaleLinear([Math.max(0, lo), 1], [m.l, W - m.r]);
+    const y = d3.scaleLinear([0, Math.max(2, (d3.max(fin) || 0) * 1.15)], [H - m.b, m.t]).nice(4);
+    const yInf = 12;
+    const r = d3.scaleSqrt([0, d3.max(data, (d) => d.s.n)], [0, rMax]);
+    const yOf = (d) => (d.pf === Infinity ? yInf : y(d.pf || 0));
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'group')
+      .attr('aria-label', '策略比較：' + data.map((d) => `${d.s.short} 勝率 ${F.rate(d.win)}、獲利因子 ${d.pf === Infinity ? '無虧損' : ratio(d.pf)}、${d.s.n} 趟`).join('；'));
+    const g = svg.append('g').style('font-family', 'var(--num)').attr('font-size', 12);
+    const yt = y.ticks(4);
+    g.selectAll('line.gl').data(yt).join('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y).attr('stroke', col('--grid'));
+    g.selectAll('text.yt').data(yt).join('text').attr('class', 'yt').attr('x', m.l - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', col('--muted')).text((v) => v.toFixed(v % 1 ? 1 : 0));
+    const xt = x.ticks(5).filter((v) => v >= x.domain()[0]);
+    g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 8).attr('text-anchor', 'middle').attr('fill', col('--muted')).text((v) => Math.round(v * 100) + '%');
+    if (hasInf) {
+      g.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', yInf + 14).attr('y2', yInf + 14).attr('stroke', col('--grid')).attr('stroke-dasharray', '3 4');
+      g.append('text').attr('x', m.l - 8).attr('y', yInf).attr('dy', '0.32em').attr('text-anchor', 'end').attr('font-size', 11).style('font-family', 'var(--font)').attr('fill', col('--muted')).text('無虧損');
+    }
+    // 參考線：勝率 50%、獲利因子 1（打平）
+    const ref = (x1, y1, x2, y2) => g.append('line').attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2).attr('stroke', col('--zero')).attr('stroke-dasharray', '4 4');
+    if (x.domain()[0] < 0.5) ref(x(0.5), m.t - 4, x(0.5), H - m.b);
+    ref(m.l, y(1), W - m.r, y(1));
+    g.append('text').attr('x', W - m.r).attr('y', y(1) - 6).attr('text-anchor', 'end').attr('font-size', 11).style('font-family', 'var(--font)').attr('fill', col('--muted')).text('1＝打平');
+    g.append('text').attr('x', m.l).attr('y', H - 8).attr('text-anchor', 'start').attr('font-size', 11).style('font-family', 'var(--font)').attr('fill', col('--faint')).attr('dx', -m.l + 2).text('勝率');
+    // 大的先畫，小的疊在上面才點得到
+    const risky = { 1: col('--warn'), 2: col('--danger') };
+    const bs = g.append('g').selectAll('g.b').data(data.slice().sort((a, b) => b.s.n - a.s.n)).join('g').attr('class', 'b')
+      .attr('tabindex', 0).attr('role', 'link').attr('aria-label', (d) => `${d.s.short}：勝率 ${F.rate(d.win)}，獲利因子 ${d.pf === Infinity ? '無虧損' : ratio(d.pf)}，${d.s.n} 趟，累積 ${F.pct(d.s.ret)}${d.s.risk ? '，風控' + d.s.risk.label : ''}。按 Enter 看明細`)
+      .attr('transform', (d) => `translate(${x(d.win)},${yOf(d)})`);
+    bs.filter((d) => d.s.risk && d.s.risk.lv).append('circle').attr('r', (d) => Math.max(6, r(d.s.n)) + 4).attr('fill', 'none').attr('stroke', (d) => risky[d.s.risk.lv]).attr('stroke-width', 1.5).attr('stroke-dasharray', '3 3');
+    // 透明的大圈：小泡泡手機也點得到（至少 44px）
+    bs.append('circle').attr('r', (d) => Math.max(22, r(d.s.n) + 6)).attr('fill', 'transparent');
+    bs.append('circle').attr('class', 'ring-f').attr('r', (d) => Math.max(6, r(d.s.n)) + 7).attr('fill', 'none').attr('stroke', col('--link')).attr('stroke-width', 2);
+    bs.append('circle').attr('class', 'main').attr('r', (d) => Math.max(6, r(d.s.n))).attr('fill', (d) => d.s.color).attr('fill-opacity', 0.35).attr('stroke', (d) => d.s.color).attr('stroke-width', 1.5);
+    bs.append('text').attr('x', (d) => (x(d.win) > W - 120 ? -1 : 1) * (Math.max(6, r(d.s.n)) + 6)).attr('dy', '0.32em')
+      .attr('text-anchor', (d) => (x(d.win) > W - 120 ? 'end' : 'start')).style('font-family', 'var(--font)').attr('fill', col('--text')).attr('font-size', 12).text((d) => d.s.short);
+    const tip = d3.select(box).append('div').attr('class', 'tip').style('display', 'none');
+    const show = (ev, d) => {
+      tip.style('display', null).selectAll('*').remove();
+      const hd = tip.append('div').attr('class', 'd'); hd.append('span').text(d.s.short); if (d.s.risk) hd.node().appendChild(riskTag(d.s.risk));
+      const row = (k, v, cls) => { const rr = tip.append('div').attr('class', 'r'); rr.append('span'); rr.append('span').text(k); rr.append('span').attr('class', 'n ' + (cls || '')).text(v); };
+      row('勝率', `${F.rate(d.win)}（${d.s.w}勝${d.s.l}負）`); row('獲利因子', d.pf === Infinity ? '無虧損' : ratio(d.pf)); row('趟數', String(d.s.n)); row('累積報酬', F.pct(d.s.ret), F.tone(d.s.ret));
+      const pad = parseFloat(getComputedStyle(box).paddingLeft), tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+      let lx = pad + x(d.win) + 18; if (lx + tw > box.clientWidth) lx = pad + x(d.win) - tw - 18;
+      tip.style('left', Math.max(0, lx) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, yOf(d) - th / 2)) + 'px');
+    };
+    const hide = () => tip.style('display', 'none');
+    bs.on('pointerenter', show).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') hide(); }).on('focus', show).on('blur', hide)
+      .on('click', (ev, d) => openStrategy(d.s.name)).on('keydown', (ev, d) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openStrategy(d.s.name); } });
+    hiders.set('bub', hide);
+  };
+
   // ---- 各策略表（依分類分組，每組有小計） ----
   const renderStrategies = () => {
     const tb = $('st-body'); tb.replaceChildren();
     ordered().forEach(({ cat, items }) => {
       const n = d3.sum(items, (s) => s.n), w = d3.sum(items, (s) => s.w), l = d3.sum(items, (s) => s.l);
-      const ret = d3.sum(items, (s) => s.ret), pnl = d3.sum(items, (s) => s.pnl), pos = d3.sum(items, (s) => s.pos), unr = d3.sum(items, (s) => s.unr);
+      const ret = d3.sum(items, (s) => s.ret), pos = d3.sum(items, (s) => s.pos), unr = d3.sum(items, (s) => s.unr);
+      const cs = tradeStats(M.trips.filter((t) => items.some((s) => s.name === t.strategy)));
       const h = el('tr', 'cat');
-      td(h, `${cat}（${items.length} 支）`, 'dsk');
-      td(h, F.int(n), 'dsk'); td(h, n ? F.rate(w / n) : '—', 'dsk'); td(h, F.pct(ret), 'dsk ' + F.tone(ret)); td(h, F.money(pnl), 'dsk ' + F.tone(pnl));
-      td(h, n ? F.pct(ret / n) : '—', 'dsk'); td(h, F.int(pos), 'dsk'); td(h, pos ? F.money(unr) : '—', 'dsk ' + (pos ? F.tone(unr) : '')); td(h, '', 'dsk');
+      td(h, `${cat}（${items.length} 支）`, 'dsk'); td(h, '', 'dsk');
+      td(h, F.int(n), 'dsk'); td(h, n ? F.rate(w / n) : '—', 'dsk'); td(h, F.pct(ret), 'dsk ' + F.tone(ret)); td(h, n ? ratio(cs.pf) : '—', 'dsk');
+      td(h, n ? F.pct(ret / n) : '—', 'dsk'); td(h, F.int(pos), 'dsk'); td(h, pos ? F.pct(unr) : '—', 'dsk ' + (pos ? F.tone(unr) : '')); td(h, '', 'dsk');
       td(h, `${cat}（${items.length} 支）`, 'mob l'); td(h, F.pct(ret), 'mob ' + F.tone(ret)); td(h, '', 'chev');
       tb.appendChild(h);
       const quiet = items.filter((s) => !s.n && !s.pos);
@@ -918,20 +1268,22 @@
         const c = td(tr, '', 't dsk');
         c.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); c.appendChild(document.createTextNode(s.short));
         if (s.status && s.status !== '啟用') c.appendChild(el('span', 'tag', s.status));
+        td(tr, '', 'dsk').appendChild(riskTag(s.risk));
         td(tr, F.int(s.n), 'dsk');
         two(tr, s.n ? F.rate(s.w / s.n) : '—', s.n ? `${s.w}勝${s.l}負${s.t ? s.t + '平' : ''}` : null, 'dsk');
         td(tr, F.pct(s.ret), 'dsk ' + F.tone(s.ret));
-        td(tr, F.money(s.pnl), 'dsk ' + F.tone(s.pnl));
+        td(tr, s.n ? ratio(s.pf) : '—', 'dsk').title = s.pf === Infinity ? '還沒有賠的趟' : '';
         td(tr, s.n ? F.pct(s.avg) : '—', 'dsk ' + (s.n ? F.tone(s.avg) : ''));
         td(tr, F.int(s.pos), 'dsk');
-        td(tr, s.pos ? F.money(s.unr) : '—', 'dsk ' + (s.pos ? F.tone(s.unr) : ''));
+        td(tr, s.pos ? F.pct(s.unr) : '—', 'dsk ' + (s.pos ? F.tone(s.unr) : ''));
         td(tr, s.last ? F.day(s.last) : '—', 'dsk');
         // 手機：兩行
         const mc = el('td', 'mob l t two');
         const top = el('span'); top.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); top.appendChild(document.createTextNode(s.short));
         if (s.status && s.status !== '啟用') top.appendChild(el('span', 'tag', s.status));
+        if (s.risk && s.risk.lv) top.appendChild(riskTag(s.risk));
         mc.appendChild(top);
-        mc.appendChild(el('span', 'sub', s.n || s.pos ? `${s.n} 趟${s.n ? '・' + s.w + '勝' + s.l + '負' : ''}・淨 ${F.money(s.pnl)}${s.pos ? '・持倉 ' + s.pos + '（' + F.money(s.unr) + '）' : ''}` : '還沒有交易'));
+        mc.appendChild(el('span', 'sub', s.n || s.pos ? `${s.n} 趟${s.n ? '・' + s.w + '勝' + s.l + '負' : ''}${s.pf != null && s.pf !== Infinity ? '・獲利因子 ' + ratio(s.pf) : ''}${s.pos ? '・持倉 ' + s.pos + '（' + F.pct(s.unr) + '）' : ''}` : '還沒有交易'));
         tr.appendChild(mc);
         td(tr, F.pct(s.ret), 'mob ' + F.tone(s.ret));
         td(tr, '', 'chev').appendChild(chev());
@@ -939,7 +1291,7 @@
       });
       if (quiet.length) {
         const q = el('tr', 'quiet');
-        const c = el('td', 't'); c.colSpan = 10;
+        const c = el('td', 't'); c.colSpan = 11;
         c.appendChild(el('span', 'q-l', `還沒有交易（${quiet.length} 支）`));
         quiet.forEach((s) => { const n = el('span', 'q-n', s.short); n.title = s.name; if (s.status && s.status !== '啟用') n.appendChild(el('span', 'tag', s.status)); c.appendChild(n); });
         q.appendChild(c); tb.appendChild(q);
@@ -964,18 +1316,17 @@
     const tb = $('pos-body'); tb.replaceChildren();
     const rows = M.positions.slice().sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
     $('pos-meta').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + rows.length + ' 檔' : '';
-    if (!rows.length) { emptyRow(tb, 6, '目前沒有持倉。'); return; }
+    if (!rows.length) { emptyRow(tb, 5, '目前沒有持倉。'); return; }
     rows.forEach((p) => {
       const tr = el('tr');
       two(tr, p.name || p.code, shortOf(p.strategy || '') + '・' + F.day(p.entry_date) + ' 進場', 't dsk');
       td(tr, p.side === 'short' ? '空' : '多', 't dsk');
-      td(tr, F.lots(p.shares), 'dsk');
       td(tr, F.price(p.avg_cost), 'dsk');
       td(tr, F.price(p.close_price), 'dsk');
-      two(tr, F.money(p.unrealized_pnl), F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pnl));
-      const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (p.name || p.code) + '　' + (p.side === 'short' ? '空' : '多') + ' ' + F.lots(p.shares) + ' 張'));
+      td(tr, F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pct));
+      const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (p.name || p.code) + '　' + (p.side === 'short' ? '空' : '多')));
       mc.appendChild(el('span', 'sub', shortOf(p.strategy || '') + '・均價 ' + F.price(p.avg_cost) + '・收盤 ' + F.price(p.close_price))); tr.appendChild(mc);
-      two(tr, F.pct(p.unrealized_pct), F.money(p.unrealized_pnl), 'mob ' + F.tone(p.unrealized_pnl));
+      td(tr, F.pct(p.unrealized_pct), 'mob ' + F.tone(p.unrealized_pct));
       tb.appendChild(tr);
     });
   };
@@ -994,10 +1345,10 @@
       td(tr, t.side === 'short' ? '空' : '多', 't dsk');
       td(tr, F.price(t.entry_price), 'dsk');
       td(tr, F.price(t.exit_price), 'dsk');
-      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'dsk ' + F.tone(t.return_pct));
+      td(tr, F.pct(t.return_pct), 'dsk ' + F.tone(t.return_pct));
       const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (t.name || t.code) + '　' + (t.side === 'short' ? '空' : '多') + ' ' + F.price(t.entry_price) + ' → ' + F.price(t.exit_price)));
-      mc.appendChild(el('span', 'sub', F.day(t.d) + ' ' + F.hm(t.exit_time) + '・' + shortOf(t.strategy || '') + '・' + F.lots(t.shares) + ' 張')); tr.appendChild(mc);
-      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'mob ' + F.tone(t.return_pct));
+      mc.appendChild(el('span', 'sub', F.day(t.d) + ' ' + F.hm(t.exit_time) + '・' + shortOf(t.strategy || ''))); tr.appendChild(mc);
+      td(tr, F.pct(t.return_pct), 'mob ' + F.tone(t.return_pct));
       tb.appendChild(tr);
     });
   };
@@ -1053,11 +1404,11 @@
     const trips = M.trips.filter((t) => t.strategy === name);
     const pos = M.positions.filter((p) => p.strategy === name).sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
     const dts = [...new Set(trips.map((t) => t.d))].sort();
-    const byDay = d3.rollup(trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, p: d3.sum(v, (t) => t.net_pnl || 0) }), (t) => t.d);
+    const byDay = d3.rollup(trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length }), (t) => t.d);
     // 依股票彙總：交易過的和現在持有的都算
     const stocks = new Map();
-    const stockOf = (code, nm) => { const k = code || nm || '—'; if (!stocks.has(k)) stocks.set(k, { code: code || '', name: nm || '', n: 0, w: 0, l: 0, t: 0, ret: 0, pnl: 0, last: '', held: false }); return stocks.get(k); };
-    trips.forEach((t) => { const o = stockOf(t.code, t.name); o.n++; const w = winOf(t); if (w > 0) o.w++; else if (w < 0) o.l++; else o.t++; o.ret += t.return_pct || 0; o.pnl += t.net_pnl || 0; if (t.d > o.last) o.last = t.d; if (t.name) o.name = t.name; });
+    const stockOf = (code, nm) => { const k = code || nm || '—'; if (!stocks.has(k)) stocks.set(k, { code: code || '', name: nm || '', n: 0, w: 0, l: 0, t: 0, ret: 0, last: '', held: false }); return stocks.get(k); };
+    trips.forEach((t) => { const o = stockOf(t.code, t.name); o.n++; const w = winOf(t); if (w > 0) o.w++; else if (w < 0) o.l++; else o.t++; o.ret += t.return_pct || 0; if (t.d > o.last) o.last = t.d; if (t.name) o.name = t.name; });
     pos.forEach((p) => { const o = stockOf(p.code, p.name); o.held = true; });
     dData = { s, trips, pos, stocks: [...stocks.values()].sort((a, b) => ((b.held ? M.lastPosDate : '') || b.last).localeCompare((a.held ? M.lastPosDate : '') || a.last) || b.n - a.n) };
 
@@ -1067,7 +1418,7 @@
     if (!trips.length && !pos.length) add('還沒有交易紀錄，第一次進場後會出現在這裡。');
     if (dts.length) {
       const d = dts[dts.length - 1], b = byDay.get(d);
-      add('最近一次出場是 ' + F.day(d) + '，'); add(String(b.n), 'n'); add(' 趟淨損益 '); add(F.money(b.p) + ' 元', 'n ' + F.tone(b.p)); add('。');
+      add('最近一次出場是 ' + F.day(d) + '，'); add(String(b.n), 'n'); add(' 趟合計 '); add(F.pct(b.r), 'n ' + F.tone(b.r)); add('。');
     }
     if (pos.length) {
       const w = pos[0];
@@ -1075,24 +1426,32 @@
       if ((w.unrealized_pct ?? 0) < 0) { add(' 檔，' + (w.name || w.code) + ' 跌最多 '); add(F.pct(w.unrealized_pct), 'n down'); add('。'); } else add(' 檔都在成本之上。');
     } else if (trips.length) add('目前沒有持倉。');
 
-    const ret = d3.sum(trips, (t) => t.return_pct || 0), pnl = d3.sum(trips, (t) => t.net_pnl || 0);
+    const ret = d3.sum(trips, (t) => t.return_pct || 0);
     const W = trips.filter((t) => winOf(t) > 0).length, L = trips.filter((t) => winOf(t) < 0).length, T = trips.length - W - L;
     const lv = $('d-lead'); lv.textContent = F.pct(ret); lv.className = 'lead-v ' + F.tone(ret);
     const ls = $('d-lead-s'); ls.replaceChildren(document.createTextNode('已實現，'), el('span', 'n', F.int(trips.length)), document.createTextNode(' 趟' + (dts.length ? '・' + F.day(dts[0]) + ' 到 ' + F.day(dts[dts.length - 1]) : '')));
 
     const kv = $('d-kv'); kv.replaceChildren();
     const row = (label, value, tone, small) => { const d = el('div'); d.appendChild(el('dt', null, label)); const v = el('dd', tone || null, value); if (small) v.appendChild(el('small', null, small)); d.appendChild(v); kv.appendChild(d); };
-    const unr = d3.sum(pos, (p) => p.unrealized_pnl || 0);
-    row('已實現淨損益', trips.length ? F.money(pnl) : '—', F.tone(pnl), trips.length ? '元' : '');
+    const unr = d3.sum(pos, (p) => p.unrealized_pct || 0);
+    // 風控燈號放最上面：危險、需注意的一眼看到
+    if (s.risk) { const d = el('div', 'kv-risk'); d.appendChild(el('dt', null, '風控')); const v = el('dd'); v.appendChild(riskTag(s.risk)); v.appendChild(el('small', null, s.risk.text)); d.appendChild(v); kv.appendChild(d); }
     row('勝率', trips.length ? F.rate(W / trips.length) : '—', '', trips.length ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '');
-    row('平均每趟', trips.length ? F.pct(ret / trips.length) : '—', trips.length ? F.tone(ret) : '');
+    row('獲利因子', trips.length ? (s.pf === Infinity ? '無虧損' : ratio(s.pf)) : '—', s.pf != null && s.pf !== Infinity ? (s.pf >= 1 ? 'up' : 'down') : '', s.payoff != null ? '賺賠比 ' + ratio(s.payoff) : '');
+    row('平均每趟', trips.length ? F.pct(ret / trips.length) : '—', trips.length ? F.tone(ret) : '', s.avgW != null || s.avgL != null ? `賺 ${s.avgW != null ? F.pct(s.avgW) : '—'}・賠 ${s.avgL != null ? F.pct(s.avgL) : '—'}` : '');
+    row('連勝連敗', streakText(s.streak), s.streak ? (s.streak.w > 0 ? 'up' : 'down') : '', trips.length ? `最長 ${s.maxW} 連勝・${s.maxL} 連敗` : '');
     row('交易過的股票', F.int(dData.stocks.filter((o) => o.n).length), '', '檔');
-    row('持倉', F.int(pos.length), '', '檔');
-    row('未實現損益', pos.length ? F.money(unr) : '—', pos.length ? F.tone(unr) : '', pos.length ? '元' : '');
+    row('持倉', F.int(pos.length), '', pos.length ? '檔・未實現 ' + F.pct(unr) : '檔');
 
     let c = 0; const cum = dts.map((d) => (c += byDay.get(d).r));
     highLine(ls, cum, dts);
-    dChart =() => plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } });
+    // 期間從這支策略自己最後一個出場日往回算
+    const dFrom = () => { if (range === 'all' || !dts.length) return null; const last = new Date(dts[dts.length - 1] + 'T00:00:00Z'); return isoOf(range === 'ytd' ? new Date(Date.UTC(last.getUTCFullYear(), 0, 1)) : d3.utcMonth.offset(last, range === '1m' ? -1 : -3)); };
+    dChart = () => {
+      renderRange();
+      plotF($('d-chart'), $('d-chart-empty'), { dates: dts, from: dFrom(), main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (ds) => `${FREQ[freq].bar} ${d3.sum(ds, (d) => byDay.get(d).n)} 趟` });
+      perfMeta($('d-perf-meta'), dts.length ? statsOf(dts, cum) : null);
+    };
     dChart();
 
     // 目前持倉：沒有就整張卡收起來（上面那句話已經說了）
@@ -1104,18 +1463,17 @@
       td(tr, p.code || '—', 'dsk');
       td(tr, p.name || '', 't l dsk');
       td(tr, sideOf(p.side), 't dsk');
-      td(tr, F.lots(p.shares), 'dsk');
       td(tr, F.day(p.entry_date), 'dsk');
       td(tr, heldOf(p), 'dsk');
       td(tr, F.price(p.avg_cost), 'dsk');
       td(tr, F.price(p.close_price), 'dsk');
-      two(tr, F.money(p.unrealized_pnl), F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pnl));
+      td(tr, F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pct));
       const mc = el('td', 'mob l t two');
-      mc.appendChild(stockLine(p.code, p.name, sideOf(p.side) + ' ' + F.lots(p.shares) + ' 張'));
+      mc.appendChild(stockLine(p.code, p.name, sideOf(p.side)));
       mc.appendChild(el('span', 'sub', F.day(p.entry_date) + ' 進場・持有 ' + heldOf(p)));
       mc.appendChild(el('span', 'sub', '均價 ' + F.price(p.avg_cost) + '・收盤 ' + F.price(p.close_price)));
       tr.appendChild(mc);
-      two(tr, F.pct(p.unrealized_pct), F.money(p.unrealized_pnl), 'mob ' + F.tone(p.unrealized_pnl));
+      td(tr, F.pct(p.unrealized_pct), 'mob ' + F.tone(p.unrealized_pct));
       pb.appendChild(tr);
     });
     renderDetailList();
@@ -1142,11 +1500,11 @@
         td(tr, F.int(o.n), 'dsk');
         two(tr, o.n ? F.rate(o.w / o.n) : '—', o.n ? `${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}` : null, 'dsk');
         td(tr, o.n ? F.pct(o.ret) : '—', 'dsk ' + (o.n ? F.tone(o.ret) : ''));
-        td(tr, o.n ? F.money(o.pnl) : '—', 'dsk ' + (o.n ? F.tone(o.pnl) : ''));
+        td(tr, o.n ? F.pct(o.ret / o.n) : '—', 'dsk ' + (o.n ? F.tone(o.ret) : ''));
         td(tr, o.last ? F.day(o.last) : '—', 'dsk');
         const mc = el('td', 'mob l t two');
         const top = stockLine(o.code, o.name); if (o.held) top.appendChild(el('span', 'tag', '持倉中')); mc.appendChild(top);
-        mc.appendChild(el('span', 'sub', o.n ? `${o.n} 趟・${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}・淨 ${F.money(o.pnl)}` : '還沒有出場'));
+        mc.appendChild(el('span', 'sub', o.n ? `${o.n} 趟・${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}・平均 ${F.pct(o.ret / o.n)}` : '還沒有出場'));
         if (o.n) mc.appendChild(el('span', 'sub', '最近出場 ' + F.day(o.last)));
         tr.appendChild(mc);
         td(tr, o.n ? F.pct(o.ret) : '—', 'mob ' + (o.n ? F.tone(o.ret) : ''));
@@ -1164,30 +1522,124 @@
     const key = (t) => t.d + ' ' + F.hms(t.exit_time);
     const list = trips.filter((t) => !dStock || (t.code || t.name) === dStock).sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
     const tb = $('d-tr-body'); tb.replaceChildren();
-    if (!list.length) { emptyRow(tb, 10, '還沒有出場紀錄。'); return; }
+    if (!list.length) { emptyRow(tb, 9, '還沒有出場紀錄。'); return; }
     list.slice(0, dShown).forEach((t) => {
       const tr = el('tr');
       td(tr, t.code || '—', 'dsk');
       td(tr, t.name || '', 't l dsk');
       td(tr, sideOf(t.side), 't dsk');
-      td(tr, F.lots(t.shares), 'dsk');
       td(tr, when(t.entry_date, t.entry_time), 'dsk');
       td(tr, F.price(t.entry_price), 'dsk');
       td(tr, when(t.d, t.exit_time), 'dsk');
       td(tr, F.price(t.exit_price), 'dsk');
       td(tr, holdOf(t), 'dsk');
-      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'dsk ' + F.tone(t.return_pct));
+      td(tr, F.pct(t.return_pct), 'dsk ' + F.tone(t.return_pct));
       const mc = el('td', 'mob l t two');
-      mc.appendChild(stockLine(t.code, t.name, sideOf(t.side) + ' ' + F.lots(t.shares) + ' 張'));
+      mc.appendChild(stockLine(t.code, t.name, sideOf(t.side)));
       mc.appendChild(el('span', 'sub', '進 ' + when(t.entry_date, t.entry_time) + '・' + F.price(t.entry_price)));
       // 當天進出的，出場那行省略日期，手機才放得下
       mc.appendChild(el('span', 'sub', '出 ' + (F.iso(t.entry_date) === t.d ? F.hms(t.exit_time) || F.day(t.d) : when(t.d, t.exit_time)) + '・' + F.price(t.exit_price) + '・' + holdOf(t)));
       tr.appendChild(mc);
-      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'mob ' + F.tone(t.return_pct));
+      td(tr, F.pct(t.return_pct), 'mob ' + F.tone(t.return_pct));
       tb.appendChild(tr);
     });
     if (list.length > dShown) { more.hidden = false; $('d-more').textContent = `再顯示 ${Math.min(PAGE, list.length - dShown)} 趟（還有 ${list.length - dShown} 趟）`; }
   };
+
+  // ---- 分享圖卡（參考 TradeTrack-Pro）：1080×1350 的圖，只有 %，存圖或手機直接分享 ----
+  // 不管畫面是深色淺色，圖卡一律深色底（傳到 LINE 比較醒目）
+  const CARD = { bg: '#0b1222', bg2: '#111a2e', text: '#f8fafc', muted: '#94a3b8', faint: '#64748b', grid: '#1e293b', up: '#f87171', down: '#4ade80', accent: '#3b82f6', peak: '#deb06c' };
+  const NUMF = '"Fira Code", ui-monospace, monospace', TXTF = '"Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+  const cardData = () => {
+    if (cur) {
+      const s = M.strat.find((x) => x.name === cur); if (!s) return null;
+      const trips = M.trips.filter((t) => t.strategy === cur), dts = [...new Set(trips.map((t) => t.d))].sort();
+      const byD = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.d); let c = 0;
+      return { title: s.short, sub: s.cat, dates: dts, v: dts.map((d) => (c += byD.get(d))), n: s.n, w: s.w, l: s.l, pf: s.pf, file: 'strategy' };
+    }
+    const k = M.kpi, W = d3.sum(M.strat, (s) => s.w), L = d3.sum(M.strat, (s) => s.l);
+    return { title: '總績效', sub: `XQ 實盤・${M.strat.filter((s) => s.n).length} 支策略有交易`, dates: M.dates, v: M.total, n: k.n, w: W, l: L, pf: k.pf, file: 'total' };
+  };
+  const drawCard = async (o) => {
+    const Wc = 1080, Hc = 1350, P = 80, cv = document.createElement('canvas'); cv.width = Wc; cv.height = Hc;
+    const c = cv.getContext('2d');
+    const end = o.v.length ? o.v[o.v.length - 1] : 0, st = o.dates.length ? statsOf(o.dates, o.v) : null;
+    const hs = highsOf(o.v), lastHi = hs[hs.length - 1];
+    const tone = (v) => (v > 0 ? CARD.up : v < 0 ? CARD.down : CARD.text);
+    const range = o.dates.length ? F.day(o.dates[0]) + ' – ' + F.day(o.dates[o.dates.length - 1]) : '';
+    const hl = lastHi == null ? '' : lastHi === o.v.length - 1 ? F.day(o.dates[lastHi]) + ' 收盤創新高' : `高點 ${F.pct(o.v[lastHi])}（${F.day(o.dates[lastHi])}）・距高點 ${F.pct(end - o.v[lastHi])}`;
+    const site = (location.host + location.pathname).replace(/\/(index\.html)?$/, '');
+    const asof = o.dates.length ? o.dates[o.dates.length - 1].replace(/-/g, '/') : '';
+    const texts = ['QTW 策略', o.title, o.sub, '累積報酬', hl, '勝率最大回撤獲利因子趟數勝負', '累積報酬＝每趟報酬直接相加，不是帳戶報酬率', '截至收盤', range].join('');
+    try { await Promise.all([document.fonts.load(`700 150px ${NUMF}`, F.pct(end) + '0123456789.%+−/–'), document.fonts.load(`600 44px ${TXTF}`, texts), document.fonts.load(`400 30px ${TXTF}`, texts)]); } catch (e) { /* 字型讀不到就用系統字 */ }
+    const bg = c.createLinearGradient(0, 0, 0, Hc); bg.addColorStop(0, CARD.bg2); bg.addColorStop(1, CARD.bg);
+    c.fillStyle = bg; c.fillRect(0, 0, Wc, Hc);
+    const txt = (t, xx, yy, size, color, weight = 400, font = TXTF, align = 'left') => { c.font = `${weight} ${size}px ${font}`; c.fillStyle = color; c.textAlign = align; c.textBaseline = 'alphabetic'; c.fillText(t, xx, yy); return c.measureText(t).width; };
+    // 標頭：小 K 棒標誌＋名稱，右邊日期區間
+    [[0, 30, 44, CARD.accent], [26, 40, 34, CARD.text], [52, 22, 42, CARD.accent]].forEach(([dx, yy, h, col]) => { c.fillStyle = col; c.fillRect(P + dx + 4, 70 + yy - h / 2 - 8, 4, h + 16); c.fillRect(P + dx, 70 + yy - h / 2, 12, h); });
+    txt('QTW 策略', P + 84, 118, 40, CARD.text, 700);
+    txt(range, Wc - P, 118, 32, CARD.muted, 400, NUMF, 'right');
+    txt(o.title, P, 222, 50, CARD.text, 700);
+    if (o.sub) txt(o.sub, P, 270, 28, CARD.muted);
+    txt('累積報酬', P, 350, 30, CARD.muted);
+    txt(F.pct(end), P - 6, 500, 156, tone(end), 700, NUMF);
+    if (hl) txt(hl, P, 562, 30, lastHi === o.v.length - 1 ? CARD.peak : CARD.muted);
+    // 四格數字
+    const boxes = [['勝率', o.n ? F.rate(o.w / o.n) : '—', `${o.w} 勝 ${o.l} 負`, CARD.text], ['獲利因子', o.pf == null ? '—' : o.pf === Infinity ? '無虧損' : ratio(o.pf), '', o.pf != null && o.pf !== Infinity ? (o.pf >= 1 ? CARD.up : CARD.down) : CARD.text],
+      ['最大回撤', st ? (st.maxDD < 0 ? F.pct(st.maxDD) : '0.00%') : '—', '', st && st.maxDD < 0 ? CARD.down : CARD.text], ['趟數', F.int(o.n), '', CARD.text]];
+    const bw = (Wc - P * 2 - 24 * 3) / 4;
+    boxes.forEach(([l, v, sub, col], i) => {
+      const bx = P + i * (bw + 24);
+      c.fillStyle = 'rgba(148,163,184,.08)'; c.beginPath(); c.roundRect(bx, 620, bw, 150, 16); c.fill();
+      txt(l, bx + 22, 666, 26, CARD.muted);
+      txt(v, bx + 22, 726, v.length > 6 ? 38 : 46, col, 600, /[0-9]/.test(v) ? NUMF : TXTF);
+      if (sub) txt(sub, bx + 22, 758, 22, CARD.faint);
+    });
+    // 走勢：階梯線＋淡淡的面積＋金色創新高點
+    const cx0 = P + 78, cx1 = Wc - P - 10, cy0 = 840, cy1 = 1170;
+    if (o.dates.length) {
+      const ts = [d3.utcDay.offset(new Date(o.dates[0] + 'T00:00:00Z'), -1), ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))], vs = [0, ...o.v];
+      const tEnd = d3.utcDay.offset(ts[ts.length - 1], Math.max(1, Math.round((ts[ts.length - 1] - ts[0]) / 864e5 * 0.03)));
+      const xs = d3.scaleUtc([ts[0], tEnd], [cx0, cx1]);
+      const ys = d3.scaleLinear([Math.min(0, d3.min(vs)), Math.max(0, d3.max(vs)) || 0.01], [cy1, cy0]).nice(4);
+      c.strokeStyle = CARD.grid; c.lineWidth = 2;
+      ys.ticks(4).forEach((t) => { c.beginPath(); c.moveTo(cx0, ys(t)); c.lineTo(cx1, ys(t)); c.stroke(); txt(t === 0 ? '0%' : (t < 0 ? MINUS : '') + Math.round(Math.abs(t) * 100) + '%', cx0 - 14, ys(t) + 8, 22, CARD.faint, 400, NUMF, 'right'); });
+      const path = (ctx) => { ctx.moveTo(xs(ts[0]), ys(vs[0])); for (let i = 1; i < ts.length; i++) { ctx.lineTo(xs(ts[i]), ys(vs[i - 1])); ctx.lineTo(xs(ts[i]), ys(vs[i])); } ctx.lineTo(xs(tEnd), ys(vs[vs.length - 1])); };
+      const ga = c.createLinearGradient(0, cy0, 0, cy1); ga.addColorStop(0, 'rgba(59,130,246,.30)'); ga.addColorStop(1, 'rgba(59,130,246,.02)');
+      c.beginPath(); path(c); c.lineTo(xs(tEnd), ys(0)); c.lineTo(xs(ts[0]), ys(0)); c.closePath(); c.fillStyle = ga; c.fill();
+      c.save(); c.shadowColor = 'rgba(59,130,246,.7)'; c.shadowBlur = 18; c.beginPath(); path(c); c.strokeStyle = CARD.accent; c.lineWidth = 6; c.lineJoin = 'round'; c.stroke(); c.restore();
+      hs.forEach((i) => { c.beginPath(); c.arc(xs(ts[i + 1]), ys(vs[i + 1]), 11, 0, Math.PI * 2); c.fillStyle = CARD.peak; c.fill(); c.lineWidth = 5; c.strokeStyle = CARD.bg; c.stroke(); });
+      txt(F.day(o.dates[0]), cx0, cy1 + 44, 24, CARD.faint, 400, NUMF);
+      txt(F.day(o.dates[o.dates.length - 1]), cx1, cy1 + 44, 24, CARD.faint, 400, NUMF, 'right');
+    }
+    txt('累積報酬＝每趟報酬直接相加，不是帳戶報酬率', P, 1268, 24, CARD.faint);
+    if (asof) txt('截至 ' + asof + ' 收盤', P, 1304, 24, CARD.faint);
+    txt(site, Wc - P, 1304, 24, CARD.faint, 400, NUMF, 'right');
+    return cv;
+  };
+  let shareBlob = null, shareUrl = null, shareName = '';
+  const openShare = async () => {
+    if (!M) return;
+    const o = cardData(); if (!o) return;
+    const dlg = $('share-dlg'), img = $('share-img');
+    img.removeAttribute('src'); $('share-wait').hidden = false; $('share-go').hidden = true;
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    const cv = await drawCard(o);
+    shareBlob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+    if (shareUrl) URL.revokeObjectURL(shareUrl);
+    shareUrl = URL.createObjectURL(shareBlob);
+    // 檔名只用英數字：有些瀏覽器遇到中文檔名會變成沒有副檔名的「download」
+    shareName = `QTW-${o.file}-${(o.dates[o.dates.length - 1] || '').replace(/-/g, '')}.png`;
+    img.src = shareUrl; img.alt = `${o.title} 累積報酬 ${F.pct(o.v[o.v.length - 1] || 0)} 的分享圖卡`; $('share-wait').hidden = true;
+    const file = new File([shareBlob], shareName, { type: 'image/png' });
+    $('share-go').hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+  };
+  $('share').addEventListener('click', openShare);
+  $('d-share').addEventListener('click', openShare);
+  $('share-x').addEventListener('click', () => $('share-dlg').close());
+  $('share-dlg').addEventListener('click', (ev) => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });  // 點外面關掉
+  $('share-save').addEventListener('click', () => { if (!shareUrl) return; const a = document.createElement('a'); a.href = shareUrl; a.download = shareName; a.hidden = true; document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 1000); });
+  $('share-go').addEventListener('click', async () => { try { await navigator.share({ files: [new File([shareBlob], shareName, { type: 'image/png' })], title: 'QTW 策略績效' }); } catch (e) { /* 使用者取消 */ } });
 
   // ---- 兩層之間切換 ----
   let homeY = 0, pushed = false;
@@ -1204,14 +1656,14 @@
       renderDetail();
     } else {
       document.title = 'QTW 策略績效';
-      if (M) renderChart();
+      if (M) { renderChart(); renderBubbles(); }
       if (was) window.scrollTo(0, homeY);
     }
   };
   const openStrategy = (name) => { homeY = window.scrollY; pushed = true; location.hash = 's=' + encodeURIComponent(name); };
   const goBack = () => { if (pushed) { pushed = false; history.back(); } else { history.replaceState(null, '', location.pathname + location.search); route(); } };
 
-  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderCalendar(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
+  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderCalendar(); renderBubbles(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
 
   // 手機：手指放開後提示留著，點圖以外的地方才收起來
   document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart, button.cal-d')) hiders.forEach((h) => h()); }, { passive: true });
@@ -1280,11 +1732,17 @@
   document.querySelectorAll('#d-tr-card .seg button').forEach((b) => b.addEventListener('click', () => { if (dMode === b.dataset.mode) return; dMode = b.dataset.mode; dStock = null; dShown = PAGE; renderDetailList(); }));
   $('d-more').addEventListener('click', () => { dShown += PAGE; renderDetailList(); });
   $('back').addEventListener('click', goBack);
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && cur && !ev.defaultPrevented) goBack(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && cur && !ev.defaultPrevented && !$('share-dlg').open) goBack(); });  // 分享圖卡開著時 Esc 只關圖卡
   window.addEventListener('hashchange', route);
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   // 獲利日曆：切月份、滑過或點格子看當天明細
   const calGo = (k) => { calPinned = true; calMonth = monthAdd(calMonth, k); calHide(); renderCalendar(); };
+  document.querySelectorAll('.perf-ctl').forEach((c) => c.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-r], button[data-f]'); if (!b) return;
+    if (b.dataset.r) { if (b.dataset.r === range) return; range = b.dataset.r; store.set('qtw-range', range); }
+    else { if (b.dataset.f === freq) return; freq = b.dataset.f; store.set('qtw-freq', freq); }
+    if (cur) dChart(); else renderChart();
+  }));
   $('cal-prev').addEventListener('click', () => calGo(-1));
   $('cal-next').addEventListener('click', () => calGo(1));
   const cg = $('cal-grid');
@@ -1295,7 +1753,7 @@
   cg.addEventListener('focusout', (ev) => { if (!cg.contains(ev.relatedTarget)) calHide(); });
   $('reload').addEventListener('click', refresh);
   $('retry').addEventListener('click', refresh);
-  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => { if (!M) return; if (cur) dChart(); else renderChart(); }, 150); });
+  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => { if (!M) return; if (cur) dChart(); else { renderChart(); renderBubbles(); } }, 150); });
   // 深淺色切換：預設深色，點過就記在這台裝置
   const themeBtn = () => { const t = themeNow() === 'light' ? '切換成深色' : '切換成淺色'; $('theme').setAttribute('aria-label', t); $('theme').title = t; };
   $('theme').addEventListener('click', () => {
