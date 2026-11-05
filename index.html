@@ -118,8 +118,8 @@
   .risk::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .7; }
   .risk.lv1 { color: var(--warn); } .risk.lv1::before { opacity: 1; }
   .risk.lv2 { color: var(--danger); background: var(--danger-bg); padding: 1px 7px 1px 5px; border-radius: 5px; }
-  .risk.lv2::before { content: "!"; width: 13px; height: 13px; display: inline-grid; place-items: center; font-size: 10px; font-weight: 800; color: var(--surface); opacity: 1; }
-  .kpi-v.risk-v { font-size: 17px; }
+  .risk.lv2::before { content: "!"; width: 13px; height: 13px; display: inline-grid; place-items: center; font-size: 10px; font-weight: 800; color: var(--surface); background: var(--danger); opacity: 1; }
+  .kpi-v.risk-v { font-size: 17px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
   .kpi-lead { background: linear-gradient(var(--accent-soft), var(--accent-soft)); border-radius: var(--radius) 0 0 var(--radius); }
   .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
   .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; }
@@ -427,7 +427,7 @@
     </section>
   </div>
 
-  <p class="foot">網站只顯示報酬 %，不顯示金額和張數。累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負、連勝連敗只看價差，不扣手續費；獲利因子、賺賠比用扣完手續費和稅的報酬。風控上限沒設時是回撤 10%、連虧 3 趟，可在試算表「策略對照」的回撤上限、連虧上限兩欄改。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
+  <p class="foot">網站只顯示報酬 %，不顯示金額和張數。累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負、連勝連敗只看價差，不扣手續費；獲利因子、賺賠比用扣完手續費和稅的報酬。風控的回撤是從已實現的最高點算到現在（含持倉未實現），上限沒設時是回撤 10%、連虧 3 趟，可在試算表「策略對照」的回撤上限、連虧上限兩欄改。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
   </div>
 
   <div class="view" id="detail" hidden>
@@ -612,11 +612,12 @@
   const limitPct = (v) => (v == null || !Number(v) ? null : Math.abs(Math.abs(v) > 1 ? v / 100 : v));
   const RISK_L = ['安全', '需注意', '危險'];
   // 危險：到上限；需注意：回撤到上限的一半，或再虧一趟就到連虧上限
+  // 距高點＝已實現累積的最高點 到 現在（已實現＋持倉未實現）差多少：持倉還沒出場的虧損也要算進去
   const riskOf = (s) => {
-    if (!s.n) return null;
-    const dd = Math.max(0, -(s.nowDD || 0)), run = s.streak && s.streak.w < 0 ? s.streak.n : 0;
+    if (!s.n && !s.pos) return null;
+    const dd = Math.max(0, -(s.nowDD || 0) - (s.unr || 0)), run = s.streak && s.streak.w < 0 ? s.streak.n : 0;
     const lv = dd >= s.ddLim - 1e-9 || run >= s.stLim ? 2 : dd >= s.ddLim / 2 - 1e-9 || (s.stLim >= 3 && run >= s.stLim - 1) ? 1 : 0;
-    return { lv, label: RISK_L[lv], dd, run, text: `距高點 ${F.pct(-dd)}／上限 ${Math.round(s.ddLim * 1000) / 10}%・連虧 ${run}／${s.stLim} 趟` };
+    return { lv, label: RISK_L[lv], dd, run, text: `距高點 ${F.pct(-dd)}${s.pos ? '（含持倉）' : ''}／上限 ${Math.round(s.ddLim * 1000) / 10}%・連虧 ${run}／${s.stLim} 趟` };
   };
   const riskTag = (r) => { if (!r) return el('span', 'meta', '—'); const t = el('span', 'risk lv' + r.lv, r.label); t.title = r.text; return t; };
   const ratio = (v) => (v == null || v === Infinity ? '—' : v.toFixed(2));
@@ -761,8 +762,12 @@
   const plotF = (box, empty, o) => {
     if (freq === 'd') return plot(box, empty, { ...o, note: o.note && ((i) => o.note([o.dates[i]])) });
     const P = byFreq(o.dates, freq), pick = (v) => P.idx.map((i) => v[i]);
+    // 創新高、距高點、回撤照每天算：那段收盤要站上之前每一天的最高點才算創新高
+    let top = 0; const tops = o.main.v.map((x) => (top = Math.max(top, x))), ddD = o.main.v.map((x, i) => x - tops[i]);
+    const hi = P.idx.map((_, j) => j).filter((j) => ddD[P.idx[j]] > -1e-9 && tops[P.idx[j]] > (j ? tops[P.idx[j - 1]] : 0) + 1e-9);
+    const ddLow = P.idx.map((ii, j) => d3.min(ddD.slice(j ? P.idx[j - 1] + 1 : 0, ii + 1)));
     return plot(box, empty, {
-      ...o, unit: freq, n: o.dates.length, dates: P.keys, from: o.from && FREQ[freq].key(o.from),
+      ...o, unit: freq, n: o.dates.length, dates: P.keys, from: o.from && FREQ[freq].key(o.from), hi, dd: pick(ddD), ddLow,
       main: { ...o.main, v: pick(o.main.v) }, lines: (o.lines || []).map((l) => ({ ...l, v: pick(l.v) })),
       when: (i) => periodName(freq, P.keys[i], o.dates[P.idx[i]]),
       note: o.note && ((i) => o.note(P.groups[i])),
@@ -796,9 +801,9 @@
     const rs = M.strat.filter((s) => s.risk), bad = rs.filter((s) => s.risk.lv).sort((a, b) => b.risk.lv - a.risk.lv);
     const kr = $('k-risk'); kr.replaceChildren();
     if (!rs.length) kr.textContent = '—';
-    else if (!bad.length) kr.appendChild(riskTag({ lv: 0, label: '全部安全', text: rs.length + ' 支有交易的策略都在上限內' }));
+    else if (!bad.length) kr.appendChild(riskTag({ lv: 0, label: '全部安全', text: rs.length + ' 支有交易或持倉的策略都在上限內' }));
     else [2, 1].forEach((lv) => { const c = bad.filter((s) => s.risk.lv === lv).length; if (c) kr.appendChild(riskTag({ lv, label: c + ' 支' + RISK_L[lv], text: '' })); });
-    $('k-risk-s').textContent = bad.length ? bad.map((s) => s.short).join('、') : rs.length ? rs.length + ' 支有交易的都在上限內' : '';
+    $('k-risk-s').textContent = bad.length ? bad.map((s) => s.short).join('、') : rs.length ? rs.length + ' 支有交易或持倉的都在上限內' : '';
     const chk = $('k-check'); const s = k.check;
     chk.textContent = s; chk.className = 'pill' + (s === '一致' ? ' ok' : s === '不一致' ? ' bad' : '');
   };
@@ -866,14 +871,16 @@
     const XS = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
     const MV = [0, ...o.main.v];
     // 創新高和回撤一律用全部歷史算，切期間也不會變
-    const HI = new Set(highsOf(o.main.v).map((i) => i + 1));
-    let top = 0; const DD = MV.map((v) => { top = Math.max(top, v); return v - top; });
+    // 週、月由 plotF 傳每天算好的 hi、dd、ddLow 進來（只看收盤會把沒過前高的週誤標成創新高）
+    const HI = new Set((o.hi || highsOf(o.main.v)).map((i) => i + 1));
+    let top = 0; const DD = o.dd ? [0, ...o.dd] : MV.map((v) => { top = Math.max(top, v); return v - top; });
+    const LOW = o.ddLow ? [0, ...o.ddLow] : DD;  // 下方回撤圖：週、月畫那段裡最深的一天
     const DAY = MV.map((v, i) => (i ? v - MV[i - 1] : 0));
     // 期間：從 o.from 那天開始，前一個點留著當起點
     let s0 = 0;
     if (o.from) { const k = o.dates.findIndex((d) => d >= o.from); s0 = k <= 0 ? 0 : k; }
     const cut = (a) => a.slice(s0);
-    const xs = cut(XS), mainV = cut(MV), dd = cut(DD), day = cut(DAY);
+    const xs = cut(XS), mainV = cut(MV), dd = cut(DD), low = cut(LOW), day = cut(DAY);
     const lines = (o.lines || []).map((l) => ({ ...l, v: cut([0, ...l.v]) }));
     // 起點放在期間開始的前一天（那時的數字就是前一個點的數字），不要拉回很久以前的出場日
     if (s0 > 0) { const f = U.step.offset(new Date((daily ? o.from : o.dates[s0]) + 'T00:00:00Z'), -1); if (f > xs[0]) xs[0] = f; }
@@ -891,7 +898,7 @@
     const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
     const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--num)');
     let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
-    if (ddH) [ '回撤', pct1(Math.min(0, d3.min(DD))) ].forEach((t) => { probe.text(t); left = Math.max(left, probe.node().getComputedTextLength()); });
+    if (ddH) [ '回撤', pct1(Math.min(0, d3.min(LOW))) ].forEach((t) => { probe.text(t); left = Math.max(left, probe.node().getComputedTextLength()); });
     const endV = mainV[mainV.length - 1];
     const endText = F.pct(endV);
     probe.text(endText); const endW = probe.node().getComputedTextLength(); probe.remove();
@@ -948,13 +955,13 @@
     g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? up : endV < 0 ? down : col('--text')).text(endText);
 
     // 下方回撤圖：0 在上面，往下是離最高點跌了多少
-    const minDD = d3.min(DD);
+    const minDD = d3.min(LOW);
     if (ddH) {
       const yd = d3.scaleLinear([Math.min(minDD, -0.01), 0], [axisY - 2, axisY - ddH]);
       const dg = g.append('g').attr('class', 'dd');
       dg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', yd(0)).attr('y2', yd(0)).attr('stroke', col('--zero')).attr('stroke-width', 1);
-      dg.append('path').datum(ext(dd)).attr('d', d3.area().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y0(yd(0)).y1((d) => yd(d))).attr('fill', down).attr('fill-opacity', 0.28);
-      dg.append('path').datum(ext(dd)).attr('d', d3.line().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y((d) => yd(d))).attr('fill', 'none').attr('stroke', down).attr('stroke-width', 1.5).attr('stroke-opacity', 0.9);
+      dg.append('path').datum(ext(low)).attr('d', d3.area().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y0(yd(0)).y1((d) => yd(d))).attr('fill', down).attr('fill-opacity', 0.28);
+      dg.append('path').datum(ext(low)).attr('d', d3.line().curve(d3.curveStepAfter).x((d, i) => x(xsP[i])).y((d) => yd(d))).attr('fill', 'none').attr('stroke', down).attr('stroke-width', 1.5).attr('stroke-opacity', 0.9);
       dg.append('text').attr('x', m.l - 8).attr('y', yd(0) + 12).attr('text-anchor', 'end').attr('font-size', 11).style('font-family', 'var(--font)').attr('fill', col('--muted')).text('回撤');
       if (minDD < 0) dg.append('text').attr('x', m.l - 8).attr('y', axisY - 4).attr('text-anchor', 'end').attr('font-size', 11).attr('fill', col('--muted')).text(pct1(minDD));
     }
