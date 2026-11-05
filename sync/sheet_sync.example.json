@@ -1,0 +1,4 @@
+{
+  "url": "https://script.google.com/macros/s/（部署後拿到的網址）/exec",
+  "token": "（setup() 產生的 SYNC_TOKEN）"
+}

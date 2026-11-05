@@ -1,0 +1,1314 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="dark light">
+<title>QTW 策略績效</title>
+<script>
+  // 先決定深淺色再畫面，避免閃一下。預設深色（金融儀表板的建議），使用者切過就記住
+  (function () { var t = null; try { t = JSON.parse(localStorage.getItem('qtw-theme')); } catch (e) {}
+    document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark'; })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+  /*
+    設計系統（UI UX Pro Max：Financial Dashboard → Dark Mode (OLED) + Data-Dense Dashboard，輔以 Minimalism & Swiss Style）
+    - 預設深色，可切淺色；顏色用語意 token，元件裡不寫死色碼
+    - 字：數字用 Fira Code（等寬，欄位對齊不跳動），文字用 Fira Sans＋思源黑體
+    - 密度：間距 8 的倍數，卡片內距 16px，表格列高 40px（觸控 44px）
+    - 顏色只放在資料上：總績效用信任藍，各策略依分類分色系＋線條樣式，紅賺綠賠（台股慣例）只用在數字
+  */
+  :root {
+    --ground: #020617; --surface: #0b1222; --raised: #111a2e; --active: #1a2338;
+    --border: #1e293b; --rule: #162036; --control: #334155;
+    --text: #f8fafc; --muted: #94a3b8; --faint: #7c8ba1;
+    --accent: #3b82f6; --accent-soft: rgba(59,130,246,.14); --link: #60a5fa;
+    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155;
+    --ok-bg: rgba(74,222,128,.12); --ok: #4ade80; --bad-bg: rgba(248,113,113,.14); --bad: #fca5a5;
+    --tip-shadow: 0 8px 24px rgba(0,0,0,.5);
+    --font: "Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --num: "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --gap: 12px; --pad: 16px; --radius: 10px; --radius-control: 8px; --hit: 36px; --row: 40px;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --ground: #f1f5f9; --surface: #ffffff; --raised: #f8fafc; --active: #e2e8f0;
+    --border: #e2e8f0; --rule: #eef2f6; --control: #cbd5e1;
+    --text: #0f172a; --muted: #475569; --faint: #64748b;
+    --accent: #2563eb; --accent-soft: rgba(37,99,235,.10); --link: #1d4ed8;
+    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff;
+    --ok-bg: #dcfce7; --ok: #166534; --bad-bg: #fee2e2; --bad: #991b1b;
+    --tip-shadow: 0 8px 24px rgba(15,23,42,.12);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--ground); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  .n { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; letter-spacing: -0.01em; }
+  .up { color: var(--up); } .down { color: var(--down); } .mute { color: var(--muted); }
+  button, .tg, tbody.pick tr.row { transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+  /* 產品列 */
+  .bar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--ground) 88%, transparent); -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px); border-bottom: 1px solid var(--border); padding-top: env(safe-area-inset-top, 0px); }
+  .bar-in { max-width: 1280px; margin-inline: auto; height: 56px; display: flex; align-items: center; gap: 12px; padding-inline: max(24px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-right, 0px)); }
+  .mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mark svg { flex: none; }
+  .mark b { font-size: 16px; font-weight: 700; letter-spacing: .01em; white-space: nowrap; }
+  .mark span { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fresh { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .fresh .stale { color: var(--up); font-weight: 600; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; height: var(--hit); padding: 0 12px; border-radius: var(--radius-control); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 500; }
+  .btn:hover { background: var(--raised); border-color: var(--control); }
+  .btn:active { transform: translateY(1px); }
+  .btn svg { flex: none; color: var(--muted); }
+  .icon-btn { width: var(--hit); padding: 0; justify-content: center; }
+  :root[data-theme="light"] .i-sun, :root:not([data-theme="light"]) .i-moon { display: none; }
+
+  /* 畫布 */
+  .page { max-width: 1280px; margin-inline: auto; padding: 20px max(24px, env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
+  .title { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+  h1 { margin: 0; font-size: 24px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+  .finding { margin: 0; font-size: 14px; color: var(--muted); }
+  .finding .n { font-weight: 600; color: var(--text); }
+  .finding .n.up { color: var(--up); } .finding .n.down { color: var(--down); }
+  .alert { margin: 0; padding: 10px 14px; border-radius: var(--radius); border: 1px solid color-mix(in srgb, var(--up) 40%, var(--border)); background: var(--bad-bg); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+  .alert b { color: var(--up); font-weight: 600; }
+  .link { border: 0; background: none; padding: 0 4px; min-height: var(--hit); color: var(--link); cursor: pointer; font-size: 14px; font-weight: 500; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
+  .card-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 14px var(--pad) 0; }
+  h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+  .meta { font-size: 12px; color: var(--muted); }
+  .legend-hi { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+
+  /* 指標列：一個容器分格，第一格是累積報酬 */
+  .kpis { display: grid; grid-template-columns: minmax(0, 1.35fr) repeat(5, minmax(0, 1fr)); }
+  .kpi { padding: 14px var(--pad); display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .kpi + .kpi { border-left: 1px solid var(--border); }
+  .kpi-l { font-size: 12px; color: var(--muted); letter-spacing: .02em; }
+  .kpi-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 20px; font-weight: 600; line-height: 1.25; white-space: nowrap; letter-spacing: -0.02em; }
+  .kpi-v small { font-family: var(--font); font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; letter-spacing: 0; }
+  .kpi-s { font-size: 12px; color: var(--muted); }
+  .kpi-lead { background: linear-gradient(var(--accent-soft), var(--accent-soft)); border-radius: var(--radius) 0 0 var(--radius); }
+  .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+  .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; }
+  .lead-s { font-size: 12px; color: var(--muted); }
+  .lead-s .n { color: var(--text); font-weight: 500; }
+  .lead-s .hl { display: block; margin-top: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-size: 13px; font-weight: 600; background: var(--active); color: var(--text); width: max-content; margin-top: 2px; }
+  .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.bad { background: var(--bad-bg); color: var(--bad); }
+
+  /* 總績效：左圖右開關 */
+  .perf { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr); }
+  .perf-main { padding: 14px var(--pad) 10px; min-width: 0; display: flex; flex-direction: column; }
+  .perf-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+  .perf-side { border-left: 1px solid var(--border); padding: 14px 12px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .chart { position: relative; margin-top: 10px; flex: 1 1 auto; min-height: 320px; }
+  .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .chart svg:focus-visible { outline: 2px solid var(--link); outline-offset: 4px; border-radius: 4px; }
+  .chart.short { flex: none; height: 200px; min-height: 0; }
+  .chart-empty { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; font-size: 13px; color: var(--muted); }
+  .tip { position: absolute; z-index: 3; pointer-events: none; background: var(--surface); border: 1px solid var(--control); border-radius: 8px; box-shadow: var(--tip-shadow); padding: 8px 10px; font-size: 12px; min-width: 160px; }
+  .tip .d { color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tip .r { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; line-height: 1.75; }
+  .tip .r .n { text-align: right; }
+  .tip .tot { font-weight: 600; }
+  .hi-tag { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--link); font-weight: 600; font-size: 11px; line-height: 18px; }
+
+  /* 獲利日曆：週一到週五＋週合計，紅賺綠賠，底色深淺代表幅度，數字本身用文字色、正負號說明方向 */
+  .cal { position: relative; }
+  .cal-head { align-items: center; }
+  .cal-nav { display: flex; align-items: center; gap: 4px; }
+  .cal-nav .btn:disabled { opacity: .35; cursor: default; }
+  .cal-nav .btn:disabled:hover { background: var(--surface); border-color: var(--border); }
+  .cal-m { min-width: 7.5em; text-align: center; font-size: 14px; font-weight: 600; }
+  .cal-sum { margin: 4px var(--pad) 0; font-size: 13px; color: var(--muted); }
+  .cal-sum .n { color: var(--text); font-weight: 600; }
+  .cal-sum .n.up { color: var(--up); } .cal-sum .n.down { color: var(--down); }
+  .cal-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, .85fr); gap: 4px; padding: 12px var(--pad) 8px; }
+  .cal-wd { font-size: 12px; color: var(--muted); text-align: center; padding-bottom: 2px; letter-spacing: .02em; }
+  .cal-d { position: relative; min-height: 76px; min-width: 0; border: 0; border-radius: 8px; padding: 8px 10px; background: var(--raised); color: var(--text); display: flex; flex-direction: column; justify-content: space-between; gap: 2px; text-align: left; font: inherit; }
+  .cal-d.empty { background: transparent; }
+  .cal-d.future, .cal-d.pre { opacity: .4; }
+  .cal-d .dn { font-family: var(--num); font-size: 12px; color: var(--muted); line-height: 1.2; }
+  .cal-d.today .dn { color: var(--link); font-weight: 700; }
+  .cal-d .pv { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; line-height: 1.2; }
+  .cal-d .pv .s { display: none; }
+  .cal-d .ps { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+  button.cal-d { cursor: pointer; }
+  button.cal-d:hover, button.cal-d.on { box-shadow: inset 0 0 0 1px var(--control); }
+  .cal-d.wk { background: transparent; box-shadow: inset 0 0 0 1px var(--border); }
+  .cal-d.wk .dn { font-family: var(--font); }
+  .cal-d.tint .dn, .cal-d.tint .ps { color: color-mix(in srgb, var(--text) 72%, transparent); }
+  .r1 { background: color-mix(in srgb, var(--up) 14%, var(--surface)) !important; }
+  .r2 { background: color-mix(in srgb, var(--up) 24%, var(--surface)) !important; }
+  .r3 { background: color-mix(in srgb, var(--up) 36%, var(--surface)) !important; }
+  .r4 { background: color-mix(in srgb, var(--up) 50%, var(--surface)) !important; }
+  .g1 { background: color-mix(in srgb, var(--down) 14%, var(--surface)) !important; }
+  .g2 { background: color-mix(in srgb, var(--down) 24%, var(--surface)) !important; }
+  .g3 { background: color-mix(in srgb, var(--down) 36%, var(--surface)) !important; }
+  .g4 { background: color-mix(in srgb, var(--down) 50%, var(--surface)) !important; }
+  .flat { background: var(--active) !important; }
+  .cal-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; padding: 0 var(--pad) 14px; }
+  .cal-legend { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); }
+  .cal-sw { display: inline-block; width: 14px; height: 14px; border-radius: 3px; }
+  .cal-sw.g1 { margin-right: 4px; } .cal-sw.g4 { margin-left: 4px; } .cal-sw.r4 { margin-right: 4px; }
+  .cal .tip { min-width: 190px; }
+
+  .grp { display: flex; flex-direction: column; gap: 1px; }
+  .grp-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0; background: none; padding: 0 8px; min-height: 32px; cursor: pointer; text-align: left; font-size: 12px; color: var(--muted); letter-spacing: .02em; border-radius: 6px; }
+  .grp-h:hover { color: var(--text); background: var(--raised); }
+  .grp-h .n { font-size: 12px; }
+  .tg { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: var(--hit); padding: 0 8px; border: 0; border-radius: var(--radius-control); background: none; cursor: pointer; text-align: left; font-size: 14px; }
+  .tg:hover { background: var(--raised); }
+  .tg[aria-pressed="false"] { color: var(--faint); }
+  .tg[aria-pressed="false"] svg { opacity: .3; }
+  .tg[aria-pressed="false"] .n { color: var(--faint); }
+  .tg-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tg.total { cursor: default; font-weight: 600; background: var(--accent-soft); }
+  .tg.total:hover { background: var(--accent-soft); }
+  .idle { font-size: 12px; color: var(--muted); margin: 0; padding: 0 8px; line-height: 1.6; }
+
+  /* 表格 */
+  .tbl-wrap { overflow-x: auto; padding: 6px var(--pad) 10px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th { text-align: right; font-weight: 500; font-size: 12px; color: var(--muted); padding: 8px 8px 8px; white-space: nowrap; border-bottom: 1px solid var(--border); letter-spacing: .02em; }
+  td { text-align: right; padding: 0 8px; height: var(--row); border-bottom: 1px solid var(--rule); white-space: nowrap; font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+  tbody tr:last-child td { border-bottom: 0; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  th:last-child, td:last-child { padding-right: 0; }
+  td.t { font-family: var(--font); font-weight: 400; letter-spacing: 0; }
+  td .sub { display: block; font-family: var(--font); font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.3; letter-spacing: 0; }
+  td.two { line-height: 1.3; }
+  tr.cat td { height: 34px; background: var(--raised); font-weight: 600; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tr.cat td:first-child { font-family: var(--font); padding-left: 10px; color: var(--muted); letter-spacing: .02em; }
+  tr.cat td:last-child { padding-right: 10px; }
+  tbody.pick tr.row { cursor: pointer; }
+  tbody.pick tr.row:hover td { background: var(--raised); }
+  tr.sel td { background: var(--active) !important; }
+  tr.off td { color: var(--faint); }
+  .tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-family: var(--font); font-size: 11px; line-height: 18px; background: var(--active); color: var(--muted); vertical-align: 1px; font-weight: 500; letter-spacing: 0; }
+  .sw { display: inline-block; vertical-align: middle; margin-right: 8px; }
+  td.mob, th.mob { display: none; }
+  tr.quiet td { height: auto; padding: 10px 0 12px; white-space: normal; color: var(--muted); font-family: var(--font); font-size: 12px; line-height: 1.9; font-weight: 400; letter-spacing: 0; }
+  .q-l { margin-right: 10px; }
+  .q-n { display: inline-block; white-space: nowrap; margin-right: 12px; color: var(--faint); }
+  .filter { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised); color: var(--link); cursor: pointer; font-size: 13px; font-weight: 500; }
+  .empty-row td { height: 44px; color: var(--muted); font-family: var(--font); font-weight: 400; text-align: left; letter-spacing: 0; }
+  .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+  .foot { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.7; }
+
+  td.l, th.l { text-align: left; }
+  td.chev, th.chev { width: 22px; padding: 0 0 0 4px; color: var(--faint); }
+  td.chev svg { display: block; margin-left: auto; }
+  tbody.pick tr.row:focus-visible { outline: 2px solid var(--link); outline-offset: -2px; }
+  .code { font-family: var(--num); font-weight: 600; margin-right: 6px; }
+
+  /* 下一層：單一策略的明細 */
+  .view { display: flex; flex-direction: column; gap: var(--gap); }
+  .back { display: inline-flex; align-items: center; gap: 4px; height: var(--hit); margin-left: -8px; padding: 0 10px 0 6px; border: 0; border-radius: var(--radius-control); background: none; color: var(--link); font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .back:hover { background: var(--raised); }
+  .d-sub { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: 12px; color: var(--muted); }
+  .d-sub .tag { margin-left: 0; }
+  .kv { margin: 0; padding-top: 6px; padding-bottom: 6px; gap: 0; }
+  .kv > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--rule); }
+  .kv > div:last-child { border-bottom: 0; }
+  .kv dt { font-size: 13px; color: var(--muted); }
+  .kv dd { margin: 0; text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 16px; font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
+  .kv dd small { margin-left: 4px; font-family: var(--font); font-size: 12px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px var(--pad) 0; }
+  .seg { display: inline-flex; padding: 2px; border-radius: 8px; background: var(--active); }
+  .seg button { min-width: 84px; height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.2); font-weight: 600; }
+  .more-wrap { display: flex; justify-content: center; padding: 0 var(--pad) 16px; }
+  #detail td.mob.two { padding-top: 10px; padding-bottom: 10px; }
+  @media (pointer: coarse) { .seg button { height: 40px; } }
+
+  .skel { display: inline-block; height: .9em; width: 4em; border-radius: 4px; background: var(--active); vertical-align: middle; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .5; } }
+
+  @media (pointer: coarse) { :root { --hit: 44px; --row: 44px; } }
+  @media (max-width: 1080px) {
+    .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .kpi:nth-child(4) { border-left: 0; }
+    .kpi:nth-child(n+4) { border-top: 1px solid var(--border); }
+    .kpi-lead { border-radius: var(--radius) 0 0 0; }
+  }
+  @media (max-width: 980px) {
+    .perf { grid-template-columns: 1fr; }
+    .chart { flex: none; height: 300px; min-height: 0; }
+    .perf-side { border-left: 0; border-top: 1px solid var(--border); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .bar-in { padding-inline: 16px; gap: 8px; }
+    .mark span { display: none; }
+    .page { padding-inline: 16px; padding-top: 16px; }
+    :root { --pad: 14px; --hit: 44px; --row: 44px; }
+    h1 { font-size: 22px; }
+    .lead-v { font-size: 30px; }
+    .fresh { font-size: 12px; gap: 6px; }
+    .fresh .btn .lbl { display: none; }
+    .fresh #reload { width: var(--hit); padding: 0; justify-content: center; }
+    .chart { height: 240px; }
+    .chart.short { height: 200px; }
+    .cal-grid { gap: 3px; padding-top: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .cal-d { min-height: 54px; padding: 6px 5px; border-radius: 6px; }
+    .cal-d .dn { font-size: 11px; }
+    .cal-d .pv { font-size: 12px; letter-spacing: -0.03em; }
+    .cal-d .pv .l { display: none; }
+    .cal-d .pv .s { display: inline; }
+    .cal-d .ps { display: none; }
+    .cal-m { min-width: 6.5em; }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kpi:nth-child(n) { border-left: 0; border-top: 0; }
+    .kpi-lead { grid-column: 1 / -1; border-radius: var(--radius) var(--radius) 0 0; }
+    .kpi:nth-child(odd):not(.kpi-lead) { border-left: 1px solid var(--border); }
+    .kpi:nth-child(n+2) { border-top: 1px solid var(--border); }
+    .kpi:last-child:nth-child(even) { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+    .kpi:last-child:nth-child(even) .pill { margin-top: 0; }
+    /* 表格在手機變成兩行的清單：第一行名稱和主要數字，第二行其他欄位 */
+    thead { display: none; }
+    td.dsk { display: none; }
+    td.mob { display: table-cell; }
+    td.mob.l { text-align: left; white-space: normal; }
+    tr.cat td.dsk-cat { display: none; }
+    .tbl-wrap { padding-top: 8px; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <button class="back" id="back" type="button" hidden><svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>策略績效</button>
+    <div class="mark" id="mark">
+      <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="7" width="4" height="9" rx="1" fill="var(--accent)"/><rect x="4.4" y="3" width="1.2" height="16" fill="var(--accent)"/><rect x="9" y="9" width="4" height="7" rx="1" fill="var(--text)"/><rect x="10.4" y="6" width="1.2" height="13" fill="var(--text)"/><rect x="15" y="5" width="4" height="8" rx="1" fill="var(--accent)"/><rect x="16.4" y="2" width="1.2" height="14" fill="var(--accent)"/></svg>
+      <b>QTW 策略</b><span id="scope">XQ 實盤</span>
+    </div>
+    <div class="fresh">
+      <span id="loaded">讀取中…</span>
+      <button class="btn" id="reload" type="button" aria-label="重新整理"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 3.5V8H16"/></svg><span class="lbl">重新整理</span></button>
+      <button class="btn icon-btn" id="theme" type="button" aria-label="切換成淺色" title="切換成淺色"><svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg><svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <p class="alert" id="err" hidden><b>讀不到試算表</b><span id="err-msg">等一下再試，或重新整理。</span><button class="link" id="retry" type="button">再試一次</button></p>
+
+  <div class="view" id="home">
+  <div class="title">
+    <h1>策略績效</h1>
+    <p class="finding" id="finding"><span class="skel" style="width:18em"></span></p>
+  </div>
+
+  <section class="card kpis" aria-label="主要指標">
+    <div class="kpi kpi-lead"><span class="kpi-l">累積報酬</span><span class="lead-v" id="lead-v"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="lead-s"></span></div>
+    <div class="kpi"><span class="kpi-l">已實現淨損益</span><span class="kpi-v" id="k-pnl"><span class="skel"></span></span><span class="kpi-s">扣手續費和稅</span></div>
+    <div class="kpi"><span class="kpi-l">勝率</span><span class="kpi-v" id="k-win"><span class="skel"></span></span><span class="kpi-s" id="k-wl">&nbsp;</span></div>
+    <div class="kpi"><span class="kpi-l">持倉</span><span class="kpi-v" id="k-pos"><span class="skel"></span></span><span class="kpi-s" id="k-pos-s">&nbsp;</span></div>
+    <div class="kpi"><span class="kpi-l">未實現損益</span><span class="kpi-v" id="k-unr"><span class="skel"></span></span><span class="kpi-s" id="k-unr-s">&nbsp;</span></div>
+    <div class="kpi"><span class="kpi-l">和電腦資料核對</span><span class="pill" id="k-check">—</span></div>
+  </section>
+
+  <section class="card perf" aria-labelledby="perf-h">
+    <div class="perf-main">
+      <div class="perf-head"><h2 id="perf-h">總績效走勢</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+      <div class="chart" id="chart"><p class="chart-empty" id="chart-empty" hidden></p></div>
+    </div>
+    <div class="perf-side" id="toggles" aria-label="選擇要疊上的策略"></div>
+  </section>
+
+  <section class="card cal" aria-labelledby="cal-h">
+    <div class="card-h cal-head">
+      <h2 id="cal-h">獲利日曆</h2>
+      <div class="cal-nav">
+        <button class="btn icon-btn" id="cal-prev" type="button" aria-label="上個月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <span class="cal-m" id="cal-m" aria-live="polite">—</span>
+        <button class="btn icon-btn" id="cal-next" type="button" aria-label="下個月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+    </div>
+    <p class="cal-sum" id="cal-sum"><span class="skel" style="width:16em"></span></p>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-foot">
+      <span class="cal-legend" aria-hidden="true">賠<i class="cal-sw g4"></i><i class="cal-sw g3"></i><i class="cal-sw g2"></i><i class="cal-sw g1"></i><i class="cal-sw r1"></i><i class="cal-sw r2"></i><i class="cal-sw r3"></i><i class="cal-sw r4"></i>賺</span>
+      <span class="meta">每格＝當天出場各趟報酬加總（已實現、扣手續費和稅）。顏色深淺分 1%、5%、10% 四級。</span>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="st-h">
+    <div class="card-h"><h2 id="st-h">各策略</h2><span class="meta">依分類排列，點一列看那支策略的股票和每趟進出場</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>策略</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>平均每趟</th><th>持倉</th><th>未實現</th><th>最近出場</th><th class="chev"></th></tr></thead>
+        <tbody class="pick" id="st-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="two-col">
+    <section class="card" aria-labelledby="pos-h">
+      <div class="card-h"><h2 id="pos-h">目前持倉</h2><span class="meta" id="pos-meta"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>股票</th><th>多空</th><th>張數</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
+          <tbody id="pos-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="tr-h">
+      <div class="card-h"><h2 id="tr-h">最近交易</h2><span class="meta" id="tr-meta"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>股票</th><th>出場</th><th>多空</th><th>進場</th><th>出場價</th><th>報酬</th></tr></thead>
+          <tbody id="tr-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">累積報酬是每趟報酬直接相加，不是帳戶報酬率。勝負只看價差，不扣手續費。紅色賺、綠色賠。資料來源：Google 試算表「策略管理」，打開時即時讀取，每 5 分鐘自動更新。</p>
+  </div>
+
+  <div class="view" id="detail" hidden>
+    <div class="title">
+      <h1 id="d-name"></h1>
+      <p class="d-sub" id="d-sub"></p>
+      <p class="finding" id="d-finding"><span class="skel" style="width:14em"></span></p>
+    </div>
+
+    <section class="card perf" id="d-perf" aria-labelledby="d-perf-h">
+      <div class="perf-main">
+        <div class="perf-head"><h2 id="d-perf-h">累積報酬</h2><span class="legend-hi"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></svg>創新高</span></div>
+        <div class="lead"><span class="lead-v" id="d-lead"><span class="skel" style="width:3.5em;height:28px"></span></span><span class="lead-s" id="d-lead-s"></span></div>
+        <div class="chart" id="d-chart"><p class="chart-empty" id="d-chart-empty" hidden></p></div>
+      </div>
+      <dl class="perf-side kv" id="d-kv"></dl>
+    </section>
+
+    <section class="card" id="d-pos-card" aria-labelledby="d-pos-h" hidden>
+      <div class="card-h"><h2 id="d-pos-h">目前持倉</h2><span class="meta" id="d-pos-meta"></span></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>張數</th><th>進場日</th><th>持有</th><th>均價</th><th>收盤</th><th>未實現</th></tr></thead>
+          <tbody id="d-pos-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="d-tr-card" aria-labelledby="d-tr-h">
+      <div class="card-h"><h2 id="d-tr-h">交易紀錄</h2><span class="meta" id="d-tr-meta"></span></div>
+      <div class="tools">
+        <div class="seg" role="group" aria-label="顯示方式"><button type="button" data-mode="trips" aria-pressed="true">逐筆</button><button type="button" data-mode="stocks" aria-pressed="false">依股票</button></div>
+        <span id="d-chip"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table id="d-trips">
+          <thead><tr><th>代號</th><th class="l">股票</th><th>多空</th><th>張數</th><th>進場時間</th><th>進場價</th><th>出場時間</th><th>出場價</th><th>持有</th><th>報酬</th></tr></thead>
+          <tbody id="d-tr-body"></tbody>
+        </table>
+        <table id="d-stocks" hidden>
+          <thead><tr><th>代號</th><th class="l">股票</th><th>趟數</th><th>勝率</th><th>累積報酬</th><th>淨損益</th><th>最近出場</th><th class="chev"></th></tr></thead>
+          <tbody class="pick" id="d-st-body"></tbody>
+        </table>
+      </div>
+      <div class="more-wrap" id="d-more-wrap" hidden><button class="btn" id="d-more" type="button"></button></div>
+    </section>
+
+    <p class="foot">報酬是每趟扣手續費和稅之後的報酬率，累積報酬是直接相加。勝負只看價差。持有時間：當天進出算到秒，跨日算天數。紅色賺、綠色賠。</p>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(() => {
+  // 讀資料的兩種方式：
+  //   API_URL 有填 → 向試算表的 Apps Script（sync/Code.gs 部署成的網頁應用程式，網址結尾 /exec）拿，
+  //                  它只回傳下面 4 個分頁，試算表本身維持「限制」不公開
+  //   API_URL 空白 → 用 gviz 直接讀，試算表要開「知道連結的任何人 → 檢視者」
+  // 只讀原始分頁（電腦同步寫入的值和策略對照），所有統計都在這裡算；總覽那些公式頁可以隨意改，不影響網頁。
+  const API_URL = '';
+  const SHEET_ID = '1ZF5fgJgwMrs5sfUYWTpfX0HI9zoZlQL9WxcU4QeZL7U';
+  const SRC = {
+    strategies: { sheet: '策略對照', range: 'A1:E', text: ['策略', '狀態', '上線日', '備註', '分類'] },
+    trips: { sheet: '_trips', range: 'A1:V', text: ['trip_id', 'exit_date', 'strategy', 'strategy_log', 'code', 'name', 'side', 'entry_date', 'entry_time', 'exit_time', 'trade_type', 'synced_at'] },
+    positions: { sheet: '_positions', range: 'A1:L', text: ['date', 'strategy', 'code', 'name', 'side', 'entry_date', 'synced_at'] },
+    sync: { sheet: '_sync_log', range: 'A1:H', text: ['同步時間', '資料日期', '方式', '備註'], optional: true },
+  };
+
+  // 分類：試算表有「分類」欄就用它，沒有就從策略名稱判斷。順序就是畫面上的排列順序。
+  const CATS = ['波段做多', '當沖做空', '隔日沖', '其他'];
+  const catOf = (name, given) => {
+    if (given && String(given).trim()) return String(given).trim();
+    if (/隔日沖/.test(name)) return '隔日沖';
+    if (/(^|_)沖空(_|$)/.test(name)) return '當沖做空';
+    if (/多$/.test(name)) return '波段做多';
+    return '其他';
+  };
+  // 各分類一組色系，同組裡再用虛線樣式分開；總績效固定用 --accent
+  // 第一個顏色是各分類的代表色：總績效藍、波段青、當沖橘、隔日沖紫、其他黃，
+  // 這組在深淺兩種底色都跑過色盲和對比檢查（相鄰色差 ≥ 15、對底色 ≥ 3:1）；同分類裡再用深淺和虛線分開
+  const HUES = {
+    light: { '波段做多': ['#0e8fa3', '#005f72', '#249aae', '#007487'], '當沖做空': ['#e8590c', '#c83a00', '#f56521'], '隔日沖': ['#7c5cd6', '#5630a7', '#8667e2'], '其他': ['#8a7400', '#634e00'] },
+    dark: { '波段做多': ['#14a3a8', '#007b80', '#2db0b5', '#008d92'], '當沖做空': ['#d95926', '#c14201', '#e76635'], '隔日沖': ['#9085e9', '#6b5dbd', '#9c91f7'], '其他': ['#c98500', '#9f5e00'] },
+  };
+  const DASH = ['', '6 4', '2 3', '10 3 2 3'];
+  const themeNow = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+
+  // 簡稱：去掉分類字和停損參數那段；撞名就用全名
+  const shortOf = (name) => name.replace(/^沖空_/, '').replace(/_沖空$/, '').replace(/_隔日沖$/, '').split('_').filter((p) => !/損/.test(p)).join('_') || name;
+
+  const url = (s) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=1&sheet=${encodeURIComponent(s.sheet)}&range=${s.range}&t=${Date.now()}`;
+  const toNum = (s) => {
+    if (s == null) return null;
+    const t = String(s).trim().replace(/,/g, '').replace(/−/g, '-');
+    if (t === '') return null;
+    const pct = t.endsWith('%');
+    const n = Number(pct ? t.slice(0, -1) : t);
+    return Number.isNaN(n) ? null : (pct ? n / 100 : n);
+  };
+  // 一列欄名＋資料列 → 物件；文字欄保留字串（00878 不會掉 0），其他轉成數字
+  const toObjects = (s, head, rows) => rows.map((r) => {
+    const o = {};
+    head.forEach((h, i) => {
+      const c = String(h ?? '').trim();
+      if (!c) return;
+      const v = r[i] == null ? '' : r[i];
+      o[c] = s.text.includes(c) ? (v === '' ? null : String(v)) : toNum(v);
+    });
+    return o;
+  }).filter((o) => Object.values(o).some((v) => v != null));
+  const load = async (key) => {
+    const s = SRC[key];
+    const res = await fetch(url(s), { cache: 'no-store' });
+    if (!res.ok) throw new Error(key + ' ' + res.status);
+    const body = await res.text();
+    if (/^\s*</.test(body)) throw new Error(key + ' not shared');
+    const rows = d3.csvParseRows(body);
+    return rows.length ? toObjects(s, rows[0], rows.slice(1)) : [];
+  };
+  // Apps Script 一次回傳 4 個分頁
+  const loadApi = async () => {
+    const res = await fetch(API_URL + (API_URL.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('api ' + res.status);
+    let j;
+    try { j = JSON.parse(await res.text()); } catch (e) { throw new Error('api not public'); }
+    if (!j || !j.ok) throw new Error('api ' + ((j && j.error) || 'bad response'));
+    return Object.fromEntries(Object.keys(SRC).map((k) => { const t = j[k] || []; return [k, t.length ? toObjects(SRC[k], t[0], t.slice(1)) : []]; }));
+  };
+
+  const MINUS = '−';
+  const F = {
+    pct: (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? MINUS : '') + Math.abs(v * 100).toFixed(2) + '%'),
+    rate: (v) => (v == null ? '—' : (v * 100).toFixed(0) + '%'),
+    money: (v) => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? MINUS : '') + d3.format(',')(Math.abs(Math.round(v)))),
+    int: (v) => (v == null ? '—' : d3.format(',')(v)),
+    price: (v) => (v == null ? '—' : String(+Number(v).toFixed(2))),
+    lots: (v) => (v == null ? '—' : String(+Number(v / 1000).toFixed(3))),
+    iso: (s) => { const m = /(\d{4})\D(\d{1,2})\D(\d{1,2})/.exec(String(s || '')); return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : ''; },
+    day: (s) => { const p = F.iso(s).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : '—'; },
+    tone: (v) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down'),
+    hm: (s) => { const m = /(\d{1,2}):(\d{2})/.exec(String(s || '')); return m ? m[1].padStart(2, '0') + ':' + m[2] : ''; },
+    hms: (s) => { const m = /(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(s || '')); return m ? m[1].padStart(2, '0') + ':' + m[2] + (m[3] ? ':' + m[3] : '') : ''; },
+  };
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const td = (tr, text, cls) => { const c = el('td', cls, text); tr.appendChild(c); return c; };
+  const two = (tr, main, sub, cls) => { const c = el('td', 'two ' + (cls || '')); const m = el('span', null, main); c.appendChild(m); if (sub) c.appendChild(el('span', 'sub', sub)); tr.appendChild(c); return c; };
+  const store = { get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 私密模式不能存就算了 */ } } };
+
+  let D = null;           // 讀到的原始資料
+  let M = null;           // 算好的模型
+  const MAX_DEFAULT = 6;  // 預設最多疊 6 條策略線（趟數最多的），其他要自己點開
+  let choice = store.get('qtw-lines') || {};  // 使用者點過的開關：{策略: true/false}
+  let hidden = new Set();
+
+  // ---- 把資料整理成畫面要的樣子 ----
+  const build = () => {
+    // 策略清單＝策略對照（照列的順序）＋還沒登錄但有交易或持倉的（標「未登錄」），新策略會自動出現
+    const rows = D.strategies.filter((r) => r['策略']).map((r, i) => ({ ...r, '策略': String(r['策略']).trim(), order: i }));
+    const names = new Set(rows.map((r) => r['策略']));
+    [...D.trips, ...D.positions].forEach((t) => { if (t.strategy && !names.has(t.strategy)) { names.add(t.strategy); rows.push({ '策略': t.strategy, '狀態': '未登錄', order: 1e6 + rows.length }); } });
+    const shorts = new Map();
+    rows.forEach((r) => { const s = shortOf(r['策略']); shorts.set(s, (shorts.get(s) || 0) + 1); });
+    const trips = D.trips.map((t) => ({ ...t, d: F.iso(t.exit_date) })).filter((t) => t.d && t.strategy);
+    const lastPosDate = d3.max(D.positions, (p) => F.iso(p.date)) || '';
+    const positions = D.positions.filter((p) => F.iso(p.date) === lastPosDate);
+    // 勝負只看價差（gross_pnl），不扣手續費
+    const tBy = d3.group(trips, (t) => t.strategy), pBy = d3.group(positions, (p) => p.strategy);
+    const strat = rows.map((r) => {
+      const name = r['策略'], s = shortOf(name), ts = tBy.get(name) || [], ps = pBy.get(name) || [];
+      const n = ts.length, ret = d3.sum(ts, (t) => t.return_pct || 0);
+      return {
+        name, short: shorts.get(s) > 1 ? name : s, cat: catOf(name, r['分類']), status: r['狀態'] || '', order: r.order,
+        n, w: ts.filter((t) => (t.gross_pnl || 0) > 0).length, l: ts.filter((t) => (t.gross_pnl || 0) < 0).length,
+        t: ts.filter((t) => !t.gross_pnl).length, ret, pnl: d3.sum(ts, (t) => t.net_pnl || 0), avg: n ? ret / n : null,
+        pos: ps.length, unr: d3.sum(ps, (p) => p.unrealized_pnl || 0), last: d3.max(ts, (t) => t.d) || '',
+      };
+    });
+    // 線條樣式依策略對照裡的列順序分配：新策略加在最下面，其他策略的顏色不會跟著變
+    const theme = themeNow();
+    CATS.concat([...new Set(strat.map((s) => s.cat))].filter((c) => !CATS.includes(c))).forEach((c) => {
+      const pal = HUES[theme][c] || HUES[theme]['其他'];
+      strat.filter((s) => s.cat === c).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i + Math.floor(i / pal.length)) % DASH.length]; });
+    });
+    // 總數字：和電腦資料核對＝全部每趟報酬加總 vs 最近一次同步時 daily_pnl 的 ALL cum_pct
+    const n = trips.length, ret = d3.sum(trips, (t) => t.return_pct || 0);
+    const cum = (D.sync || []).map((r) => r['ALL cum_pct']).filter((v) => v != null).pop();
+    const kpi = {
+      ret, pnl: d3.sum(trips, (t) => t.net_pnl || 0), n, win: n ? trips.filter((t) => (t.gross_pnl || 0) > 0).length / n : null,
+      pos: positions.length, unr: d3.sum(positions, (p) => p.unrealized_pnl || 0),
+      check: cum == null ? '待同步' : Math.abs(ret - cum) <= 0.00005 * Math.max(1, n) + 1e-7 ? '一致' : '不一致',
+    };
+    // 每趟報酬依出場日累加，總績效是全部策略加總
+    const dates = [...new Set(trips.map((t) => t.d))].sort();
+    const byDay = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.strategy, (t) => t.d);
+    const series = new Map();
+    strat.forEach((s) => {
+      const m = byDay.get(s.name);
+      if (!m) return;
+      let c = 0;
+      series.set(s.name, dates.map((d) => (c += m.get(d) || 0)));
+    });
+    let c = 0;
+    const dayTot = d3.rollup(trips, (v) => d3.sum(v, (t) => t.return_pct || 0), (t) => t.d);
+    const total = dates.map((d) => (c += dayTot.get(d) || 0));
+    M = { strat, dates, series, total, positions, lastPosDate, trips, kpi };
+    applyDefaults();
+  };
+
+  const ordered = () => {
+    const out = [];
+    const cats = [...new Set(M.strat.map((s) => s.cat))].sort((a, b) => (CATS.indexOf(a) + 1 || 99) - (CATS.indexOf(b) + 1 || 99));
+    cats.forEach((c) => out.push({ cat: c, items: M.strat.filter((s) => s.cat === c).sort((a, b) => (b.n > 0) - (a.n > 0) || b.ret - a.ret || a.name.localeCompare(b.name, 'zh-Hant')) }));
+    return out;
+  };
+
+  const swatch = (color, dash, w) => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', 22); svg.setAttribute('height', 10); svg.setAttribute('aria-hidden', 'true'); svg.classList.add('sw');
+    const ln = document.createElementNS(ns, 'line');
+    ln.setAttribute('x1', 1); ln.setAttribute('x2', 21); ln.setAttribute('y1', 5); ln.setAttribute('y2', 5);
+    ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', w || 2); ln.setAttribute('stroke-linecap', 'round');
+    if (dash) ln.setAttribute('stroke-dasharray', dash);
+    svg.appendChild(ln);
+    return svg;
+  };
+
+  // ---- 標題下的一句話：最近一個出場日的結果，和持倉裡跌最多的一檔 ----
+  const renderFinding = () => {
+    const p = $('finding'); p.replaceChildren();
+    const add = (t, cls) => p.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    if (!M.dates.length && !M.positions.length) { add('還沒有實盤交易紀錄。'); return; }
+    if (M.dates.length) {
+      const d = M.dates[M.dates.length - 1];
+      const ts = M.trips.filter((t) => t.d === d);
+      add(F.day(d) + ' 出場 '); add(String(ts.length), 'n'); add(' 趟，淨損益 ');
+      const pnl = d3.sum(ts, (t) => t.net_pnl || 0); add(F.money(pnl) + ' 元', 'n ' + F.tone(pnl)); add('。');
+    }
+    if (M.positions.length) {
+      const worst = M.positions.reduce((a, b) => ((b.unrealized_pct ?? 0) < (a.unrealized_pct ?? 0) ? b : a));
+      if ((worst.unrealized_pct ?? 0) < 0) { add('持倉中 ' + (worst.name || worst.code) + ' 跌最多，'); add(F.pct(worst.unrealized_pct), 'n down'); add('。'); }
+      else { add('持倉 '); add(String(M.positions.length), 'n'); add(' 檔都在成本之上。'); }
+    }
+  };
+
+  const renderLead = () => {
+    const k = M.kpi;
+    const v = $('lead-v'); v.textContent = F.pct(k.ret); v.className = 'lead-v ' + F.tone(k.ret);
+    const s = $('lead-s'); s.replaceChildren();
+    const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    add('已實現，'); add(F.int(k.n), 'n'); add(' 趟');
+    if (M.dates.length) { add('・' + F.day(M.dates[0]) + ' 到 ' + F.day(M.dates[M.dates.length - 1])); }
+    highLine(s, M.total, M.dates);
+  };
+  // 創新高：累積報酬比之前每一天都高（而且大於 0）的那幾天
+  const highsOf = (v) => { const out = []; let top = 0; v.forEach((x, i) => { if (x > top + 1e-9) { out.push(i); top = x; } }); return out; };
+  const highLine = (box, v, dates) => {
+    const hs = highsOf(v);
+    if (!hs.length) return;
+    const line = el('span', 'hl'), last = hs[hs.length - 1];
+    if (last === v.length - 1) { line.appendChild(el('span', 'hi-tag', '創新高')); line.appendChild(document.createTextNode(' ' + F.day(dates[last]) + ' 收盤')); }
+    else { line.appendChild(document.createTextNode('高點 ')); line.appendChild(el('span', 'n', F.pct(v[last]))); line.appendChild(document.createTextNode('（' + F.day(dates[last]) + '），距高點 ')); line.appendChild(el('span', 'n', F.pct(v[v.length - 1] - v[last]))); }
+    box.appendChild(line);
+  };
+
+  const renderKpis = () => {
+    const k = M.kpi;
+    const set = (id, text, tone, unit) => { const e = $(id); e.replaceChildren(document.createTextNode(text)); e.className = 'kpi-v ' + (tone || ''); if (unit) e.appendChild(el('small', null, unit)); };
+    set('k-pnl', F.money(k.pnl), F.tone(k.pnl), '元');
+    const n = k.n;
+    const W = d3.sum(M.strat, (s) => s.w), L = d3.sum(M.strat, (s) => s.l), T = d3.sum(M.strat, (s) => s.t);
+    set('k-win', n ? F.rate(k.win) : '—');
+    $('k-wl').textContent = n ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '還沒有出場';
+    set('k-pos', F.int(k.pos), '', '檔');
+    $('k-pos-s').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤' : '';
+    set('k-unr', F.money(k.unr), F.tone(k.unr), '元');
+    const cost = d3.sum(M.positions, (p) => (p.avg_cost || 0) * (p.shares || 0));
+    $('k-unr-s').textContent = cost ? '佔持倉成本 ' + F.pct(k.unr / cost) : '';
+    const chk = $('k-check'); const s = k.check;
+    chk.textContent = s; chk.className = 'pill' + (s === '一致' ? ' ok' : s === '不一致' ? ' bad' : '');
+  };
+
+  // ---- 右側開關清單 ----
+  const renderToggles = () => {
+    const box = $('toggles'); box.replaceChildren();
+    const tot = el('div', 'tg total');
+    tot.appendChild(swatch(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), '', 3));
+    tot.appendChild(el('span', 'tg-name', '總績效'));
+    const tv = el('span', 'n ' + F.tone(M.total[M.total.length - 1] || 0), F.pct(M.total.length ? M.total[M.total.length - 1] : 0)); tot.appendChild(tv);
+    box.appendChild(tot);
+    let idle = 0;
+    ordered().forEach(({ cat, items }) => {
+      const live = items.filter((s) => M.series.has(s.name));
+      idle += items.length - live.length;
+      if (!live.length) return;
+      const g = el('div', 'grp');
+      const h = el('button', 'grp-h'); h.type = 'button';
+      const allOn = live.every((s) => !hidden.has(s.name));
+      h.setAttribute('aria-pressed', String(allOn));
+      h.title = allOn ? '關掉這一類' : '打開這一類';
+      h.appendChild(el('span', null, cat));
+      const sum = d3.sum(live, (s) => s.ret);
+      h.appendChild(el('span', 'n ' + F.tone(sum), F.pct(sum)));
+      h.addEventListener('click', () => { live.forEach((s) => (allOn ? hidden.add(s.name) : hidden.delete(s.name))); saveHidden(); renderToggles(); renderChart(); });
+      g.appendChild(h);
+      live.forEach((s) => {
+        const b = el('button', 'tg'); b.type = 'button';
+        b.setAttribute('aria-pressed', String(!hidden.has(s.name)));
+        b.title = s.name;
+        b.appendChild(swatch(s.color, s.dash));
+        b.appendChild(el('span', 'tg-name', s.short));
+        b.appendChild(el('span', 'n ' + F.tone(s.ret), F.pct(s.ret)));
+        b.addEventListener('click', () => { hidden.has(s.name) ? hidden.delete(s.name) : hidden.add(s.name); saveHidden(); renderToggles(); renderChart(); });
+        g.appendChild(b);
+      });
+      box.appendChild(g);
+    });
+    if (idle) box.appendChild(el('p', 'idle', `另有 ${idle} 支策略還沒有出場紀錄，有交易後會自動出現在這裡。`));
+  };
+  const saveHidden = () => { M.strat.forEach((s) => { if (M.series.has(s.name)) choice[s.name] = !hidden.has(s.name); }); store.set('qtw-lines', choice); };
+  const applyDefaults = () => {
+    const live = M.strat.filter((s) => M.series.has(s.name)).sort((a, b) => b.n - a.n || Math.abs(b.ret) - Math.abs(a.ret));
+    const top = new Set(live.slice(0, MAX_DEFAULT).map((s) => s.name));
+    hidden = new Set(live.filter((s) => (s.name in choice ? !choice[s.name] : !top.has(s.name))).map((s) => s.name));
+  };
+
+  // ---- 走勢圖：一條粗的主線（總績效或單一策略），可以再疊細線 ----
+  const hiders = new Map();
+  const plot = (box, empty, o) => {
+    if (!box.clientWidth) return;  // 這一層沒顯示時不畫，切回來再畫
+    box.querySelectorAll('svg, .tip').forEach((n) => n.remove());
+    if (!o.dates.length) { empty.hidden = false; empty.textContent = o.emptyText; box.classList.remove('short'); return; }
+    empty.hidden = true;
+    box.classList.toggle('short', o.dates.length < 3);
+    const css = getComputedStyle(document.documentElement);
+    const col = (n) => css.getPropertyValue(n).trim();
+    const W = Math.max(280, box.clientWidth), H = box.clientHeight || 300;
+    // 起點放在第一個出場日的前一天，從 0 開始
+    const t0 = d3.utcDay.offset(new Date(o.dates[0] + 'T00:00:00Z'), -1);
+    const xs = [t0, ...o.dates.map((d) => new Date(d + 'T00:00:00Z'))];
+    const lines = (o.lines || []).map((l) => ({ ...l, v: [0, ...l.v] }));
+    const mainV = [0, ...o.main.v];
+    const all = [mainV, ...lines.map((l) => l.v)].flat();
+    let lo = Math.min(0, d3.min(all)), hi = Math.max(0, d3.max(all));
+    if (hi - lo < 0.01) { hi += 0.005; lo -= 0.005; }
+    const y = d3.scaleLinear([lo, hi], [H - 26, 8]).nice(5);
+    const ticks = y.ticks(5);
+    const step = ticks.length > 1 ? Math.abs(ticks[1] - ticks[0]) : 0.01;
+    const fy = (v) => (v === 0 ? '0%' : (v > 0 ? '' : MINUS) + Math.abs(v * 100).toFixed(step < 0.01 ? 1 : 0) + '%');
+    const svg = d3.select(box).append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img').attr('aria-label', o.label);
+    const probe = svg.append('text').attr('font-size', 12).style('font-family', 'var(--num)');
+    let left = 0; ticks.forEach((t) => { probe.text(fy(t)); left = Math.max(left, probe.node().getComputedTextLength()); });
+    const endV = mainV[mainV.length - 1];
+    const endText = F.pct(endV);
+    probe.text(endText); const endW = probe.node().getComputedTextLength(); probe.remove();
+    const m = { l: left + 10, r: endW + 14 };
+    const x = d3.scaleUtc(d3.extent(xs), [m.l, W - m.r]);
+    const g = svg.append('g').style('font-family', 'var(--num)').attr('font-size', 12);
+    g.selectAll('line.gl').data(ticks).join('line').attr('class', 'gl').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y).attr('y2', y)
+      .attr('stroke', (t) => (t === 0 ? col('--faint') : col('--grid'))).attr('stroke-width', 1);
+    g.selectAll('text.yt').data(ticks).join('text').attr('class', 'yt').attr('x', m.l - 8).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', col('--muted')).text(fy);
+    const span = (W - m.l - m.r);
+    const xt = xs.length <= 7 ? xs.slice(1) : x.ticks(Math.max(3, Math.min(7, Math.floor(span / 75))));
+    g.selectAll('text.xt').data(xt).join('text').attr('class', 'xt').attr('x', x).attr('y', H - 6).attr('text-anchor', (d, i) => (i === 0 && x(d) - m.l < 20 ? 'start' : 'middle')).attr('fill', col('--muted')).text((t) => (t.getUTCMonth() + 1) + '/' + t.getUTCDate());
+    const line = d3.line().x((d, i) => x(xs[i])).y((d) => y(d));
+    const accent = col('--accent'), surface = col('--surface');
+    // 主線下面淡淡一層，從線往 0 軸漸淡
+    const gid = 'fade-' + box.id;
+    const grad = svg.append('defs').append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
+    grad.append('stop').attr('offset', '0%').attr('stop-color', accent).attr('stop-opacity', 0.22);
+    grad.append('stop').attr('offset', '100%').attr('stop-color', accent).attr('stop-opacity', 0.02);
+    g.append('path').datum(mainV).attr('d', d3.area().x((d, i) => x(xs[i])).y0(y(0)).y1((d) => y(d))).attr('fill', `url(#${gid})`);
+    lines.forEach((l) => g.append('path').datum(l.v).attr('d', line).attr('fill', 'none').attr('stroke', l.color).attr('stroke-width', 1.5).attr('stroke-dasharray', l.dash || null).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round'));
+    g.append('path').datum(mainV).attr('d', line).attr('fill', 'none').attr('stroke', accent).attr('stroke-width', 3).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round');
+    // 創新高的每一天在主線上加一個點（外圈用卡片底色，壓在線上也看得出來）
+    const highs = highsOf(o.main.v).map((i) => i + 1);
+    const isHigh = new Set(highs);
+    g.append('g').attr('class', 'highs').selectAll('circle').data(highs).join('circle')
+      .attr('cx', (i) => x(xs[i])).attr('cy', (i) => y(mainV[i])).attr('r', 4.5).attr('fill', accent).attr('stroke', surface).attr('stroke-width', 2);
+    const lx = x(xs[xs.length - 1]), ly = y(endV);
+    g.append('text').attr('x', lx + 9).attr('y', ly).attr('dy', '0.32em').attr('font-weight', 600).attr('fill', endV > 0 ? col('--up') : endV < 0 ? col('--down') : col('--text')).text(endText);
+    svg.attr('aria-label', `${o.label}。最新 ${endText}${highs.length ? `，創新高 ${highs.length} 次，最近一次 ${F.day(o.dates[highs[highs.length - 1] - 1])}` : ''}。可以用左右鍵逐日查看。`);
+
+    // 滑過去（手機點一下、鍵盤左右鍵）看那一天每條線的數字
+    const tip = d3.select(box).append('div').attr('class', 'tip').attr('aria-live', 'polite').style('display', 'none');
+    const rule = g.append('line').attr('y1', 8).attr('y2', H - 26).attr('stroke', col('--faint')).attr('stroke-width', 1).style('display', 'none');
+    const dots = g.append('g').style('display', 'none');
+    const bis = d3.bisector((d) => d).center;
+    let at = null;
+    const show = (i) => {
+      at = i;
+      const xi = x(xs[i]);
+      rule.style('display', null).attr('x1', xi).attr('x2', xi);
+      dots.style('display', null).selectAll('*').remove();
+      [...lines.map((l) => ({ c: l.color, v: l.v[i], r: 3.5 })), { c: accent, v: mainV[i], r: 5 }].forEach((p) => dots.append('circle').attr('cx', xi).attr('cy', y(p.v)).attr('r', p.r).attr('fill', p.c).attr('stroke', surface).attr('stroke-width', 2));
+      tip.style('display', null).selectAll('*').remove();
+      const hd = tip.append('div').attr('class', 'd');
+      hd.append('span').text(F.day(o.dates[i - 1]) + ' 收盤後');
+      if (isHigh.has(i)) hd.append('span').attr('class', 'hi-tag').text('創新高');
+      const row = (sw, name, v, cls) => { const r = tip.append('div').attr('class', 'r ' + (cls || '')); r.node().appendChild(sw); r.append('span').text(name); r.append('span').attr('class', 'n ' + F.tone(v)).text(F.pct(v)); };
+      row(swatch(accent, '', 3), o.main.name, mainV[i], 'tot');
+      lines.slice().sort((a, b) => b.v[i] - a.v[i]).forEach((l) => row(swatch(l.color, l.dash), l.short, l.v[i]));
+      if (o.note) tip.append('div').attr('class', 'd').style('margin', '4px 0 0').text(o.note(i - 1));
+      const bw = box.clientWidth, tw = tip.node().offsetWidth, th = tip.node().offsetHeight;
+      const scale = bw / W;
+      let left = xi * scale + 14; if (left + tw > bw) left = xi * scale - tw - 14;
+      tip.style('left', Math.max(0, left) + 'px').style('top', Math.max(0, Math.min(box.clientHeight - th, 8)) + 'px');
+    };
+    const move = (ev) => { const [px] = d3.pointer(ev, svg.node()); show(Math.max(1, bis(xs, x.invert(px)))); };
+    const hide = () => { at = null; tip.style('display', 'none'); rule.style('display', 'none'); dots.style('display', 'none'); };
+    svg.attr('tabindex', 0).style('touch-action', 'pan-y');
+    svg.on('pointermove', move).on('pointerdown', move).on('pointerleave', (ev) => { if (ev.pointerType !== 'touch') hide(); });
+    svg.on('focus', () => show(at || xs.length - 1)).on('blur', hide);
+    svg.on('keydown', (ev) => {
+      const last = xs.length - 1;
+      const next = { ArrowLeft: (at || last) - 1, ArrowRight: (at || last) + 1, Home: 1, End: last }[ev.key];
+      if (next != null) { ev.preventDefault(); show(Math.max(1, Math.min(last, next))); }
+      else if (ev.key === 'Escape' && at != null) { ev.preventDefault(); hide(); }
+    });
+    hiders.set(box.id, hide);
+  };
+
+  const renderChart = () => {
+    const lines = [];
+    ordered().forEach(({ items }) => items.forEach((s) => { if (M.series.has(s.name) && !hidden.has(s.name)) lines.push({ color: s.color, dash: s.dash, short: s.short, v: M.series.get(s.name) }); }));
+    plot($('chart'), $('chart-empty'), { dates: M.dates, main: { v: M.total, name: '總績效' }, lines, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: '總績效與各策略累積報酬走勢' });
+  };
+
+  // ---- 獲利日曆：每天＝當天出場各趟 return_pct 加總（和走勢圖每天的漲跌一樣） ----
+  let calMonth = null, calPinned = false;
+  const WD = '日一二三四五六';
+  const pct1 = (v) => (v > 0 ? '+' : v < 0 ? MINUS : '') + Math.abs(v * 100).toFixed(1) + '%';
+  const tintOf = (v) => { if (v == null) return ''; if (Math.abs(v) < 5e-7) return 'flat'; const a = Math.abs(v); return (v > 0 ? 'r' : 'g') + (a < 0.01 ? 1 : a < 0.05 ? 2 : a < 0.10 ? 3 : 4); };
+  const monthAdd = (ym, k) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + k, 1)); return d.toISOString().slice(0, 7); };
+  const renderCalendar = () => {
+    const today = new Date(Date.now() + TPE).toISOString().slice(0, 10);
+    const days = d3.rollup(M.trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, p: d3.sum(v, (t) => t.net_pnl || 0), by: d3.rollups(v, (w) => d3.sum(w, (t) => t.return_pct || 0), (t) => t.strategy) }), (t) => t.d);
+    const lastData = M.dates.length ? M.dates[M.dates.length - 1].slice(0, 7) : today.slice(0, 7);
+    const lo = M.dates.length ? M.dates[0].slice(0, 7) : today.slice(0, 7);
+    const hi = today.slice(0, 7) > lastData ? today.slice(0, 7) : lastData;
+    // 預設看最近有出場的那個月；使用者自己切過就停在他選的月份
+    if (!calPinned || !calMonth || calMonth < lo || calMonth > hi) calMonth = lastData;
+    const [y, m] = calMonth.split('-').map(Number);
+    $('cal-m').textContent = y + ' 年 ' + m + ' 月';
+    $('cal-prev').disabled = calMonth <= lo; $('cal-next').disabled = calMonth >= hi;
+
+    const grid = $('cal-grid'); grid.replaceChildren();
+    ['一', '二', '三', '四', '五', '週合計'].forEach((w) => grid.appendChild(el('div', 'cal-wd', w)));
+    const rows = []; let row = null;
+    const dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    for (let d = 1; d <= dim; d++) {
+      const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+      if (wd === 0 || wd === 6) continue;
+      if (!row || wd === 1) { row = [null, null, null, null, null]; rows.push(row); }
+      row[wd - 1] = calMonth + '-' + String(d).padStart(2, '0');
+    }
+    const value = (cell, v, n, p) => {
+      const pv = el('span', 'pv'); pv.appendChild(el('span', 'l', F.pct(v))); pv.appendChild(el('span', 's', pct1(v))); cell.appendChild(pv);
+      cell.appendChild(el('span', 'ps', n + ' 趟・' + F.money(p)));
+    };
+    rows.forEach((r) => {
+      let wr = 0, wn = 0, wp = 0;
+      r.forEach((iso) => {
+        if (!iso) { grid.appendChild(el('div', 'cal-d empty')); return; }
+        const o = days.get(iso), dn = String(Number(iso.slice(8)));
+        // 開始有實盤紀錄之前、和今天之後的日子變淡
+        const cls = 'cal-d' + (iso > today ? ' future' : '') + (M.dates.length && iso < M.dates[0] ? ' pre' : '') + (iso === today ? ' today' : '');
+        if (!o) { const c = el('div', cls); c.appendChild(el('span', 'dn', dn)); grid.appendChild(c); return; }
+        wr += o.r; wn += o.n; wp += o.p;
+        const c = el('button', cls + ' tint ' + tintOf(o.r)); c.type = 'button'; c.dataset.day = iso;
+        c.setAttribute('aria-label', `${F.day(iso)}（${WD[new Date(iso + 'T00:00:00Z').getUTCDay()]}）${F.pct(o.r)}，${o.n} 趟，淨 ${F.money(o.p)} 元`);
+        c.appendChild(el('span', 'dn', dn)); value(c, o.r, o.n, o.p);
+        grid.appendChild(c);
+      });
+      const wFirst = r.find(Boolean), wLast = r.filter(Boolean).pop();
+      const w = el('div', 'cal-d wk' + (wn ? ' tint ' + tintOf(wr) : wFirst > today ? ' future' : M.dates.length && wLast < M.dates[0] ? ' pre' : ''));
+      if (wn) { w.appendChild(el('span', 'dn', '週')); value(w, wr, wn, wp); }
+      grid.appendChild(w);
+    });
+
+    // 月合計
+    const inMonth = [...days.entries()].filter(([d]) => d.startsWith(calMonth)).map(([, o]) => o);
+    const s = $('cal-sum'); s.replaceChildren();
+    const add = (t, cls) => s.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    if (!inMonth.length) add('這個月還沒有出場紀錄。');
+    else {
+      const r = d3.sum(inMonth, (o) => o.r), p = d3.sum(inMonth, (o) => o.p);
+      const up = inMonth.filter((o) => o.r > 0).length, dn = inMonth.filter((o) => o.r < 0).length;
+      add(m + ' 月 '); add(F.pct(r), 'n ' + F.tone(r)); add('・出場 '); add(String(inMonth.length), 'n'); add(` 天（${up} 天賺、${dn} 天賠）・淨 `); add(F.money(p) + ' 元', 'n ' + F.tone(p));
+    }
+    calTip.days = days;
+  };
+  // 滑過（手機點一下、鍵盤聚焦）一格：看當天各策略各貢獻多少
+  const calTip = { days: null, box: null };
+  const calShow = (btn) => {
+    const o = calTip.days && calTip.days.get(btn.dataset.day);
+    if (!o) return;
+    const card = btn.closest('.cal');
+    document.querySelectorAll('.cal-d.on').forEach((b) => b.classList.remove('on'));
+    btn.classList.add('on');
+    let tip = card.querySelector('.tip');
+    if (!tip) { tip = el('div', 'tip'); card.appendChild(tip); }
+    tip.replaceChildren(); tip.style.display = '';
+    const iso = btn.dataset.day;
+    const hd = el('div', 'd'); hd.appendChild(el('span', null, F.day(iso) + '（' + WD[new Date(iso + 'T00:00:00Z').getUTCDay()] + '）')); hd.appendChild(el('span', null, o.n + ' 趟')); tip.appendChild(hd);
+    const row = (sw, name, v, cls) => { const r = el('div', 'r ' + (cls || '')); r.appendChild(sw); r.appendChild(el('span', null, name)); r.appendChild(el('span', 'n ' + F.tone(v), F.pct(v))); tip.appendChild(r); };
+    row(swatch(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), '', 3), '當天合計', o.r, 'tot');
+    o.by.slice().sort((a, b) => b[1] - a[1]).forEach(([name, v]) => { const st = M.strat.find((x) => x.name === name); row(st && st.color ? swatch(st.color, st.dash) : blank(), st ? st.short : shortOf(name), v); });
+    const f = el('div', 'd'); f.style.margin = '4px 0 0'; f.textContent = '淨損益 ' + F.money(o.p) + ' 元'; tip.appendChild(f);
+    const cb = card.getBoundingClientRect(), bb = btn.getBoundingClientRect();
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = bb.left - cb.left + bb.width / 2 - tw / 2;
+    left = Math.max(8, Math.min(cb.width - tw - 8, left));
+    let top = bb.bottom - cb.top + 6;
+    if (top + th > cb.height - 4) top = bb.top - cb.top - th - 6;
+    tip.style.left = left + 'px'; tip.style.top = Math.max(4, top) + 'px';
+  };
+  const calHide = () => { const t = document.querySelector('.cal .tip'); if (t) t.style.display = 'none'; document.querySelectorAll('.cal-d.on').forEach((b) => b.classList.remove('on')); };
+  hiders.set('cal', calHide);
+
+  // ---- 各策略表（依分類分組，每組有小計） ----
+  const renderStrategies = () => {
+    const tb = $('st-body'); tb.replaceChildren();
+    ordered().forEach(({ cat, items }) => {
+      const n = d3.sum(items, (s) => s.n), w = d3.sum(items, (s) => s.w), l = d3.sum(items, (s) => s.l);
+      const ret = d3.sum(items, (s) => s.ret), pnl = d3.sum(items, (s) => s.pnl), pos = d3.sum(items, (s) => s.pos), unr = d3.sum(items, (s) => s.unr);
+      const h = el('tr', 'cat');
+      td(h, `${cat}（${items.length} 支）`, 'dsk');
+      td(h, F.int(n), 'dsk'); td(h, n ? F.rate(w / n) : '—', 'dsk'); td(h, F.pct(ret), 'dsk ' + F.tone(ret)); td(h, F.money(pnl), 'dsk ' + F.tone(pnl));
+      td(h, n ? F.pct(ret / n) : '—', 'dsk'); td(h, F.int(pos), 'dsk'); td(h, pos ? F.money(unr) : '—', 'dsk ' + (pos ? F.tone(unr) : '')); td(h, '', 'dsk');
+      td(h, `${cat}（${items.length} 支）`, 'mob l'); td(h, F.pct(ret), 'mob ' + F.tone(ret)); td(h, '', 'chev');
+      tb.appendChild(h);
+      const quiet = items.filter((s) => !s.n && !s.pos);
+      items.filter((s) => s.n || s.pos).forEach((s) => {
+        const tr = el('tr', 'row'); tr.tabIndex = 0; tr.dataset.strategy = s.name; tr.title = s.name + '：看股票和每趟進出場';
+        if (s.status === '停用' || (!s.n && !s.pos)) tr.classList.add('off');
+        const c = td(tr, '', 't dsk');
+        c.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); c.appendChild(document.createTextNode(s.short));
+        if (s.status && s.status !== '啟用') c.appendChild(el('span', 'tag', s.status));
+        td(tr, F.int(s.n), 'dsk');
+        two(tr, s.n ? F.rate(s.w / s.n) : '—', s.n ? `${s.w}勝${s.l}負${s.t ? s.t + '平' : ''}` : null, 'dsk');
+        td(tr, F.pct(s.ret), 'dsk ' + F.tone(s.ret));
+        td(tr, F.money(s.pnl), 'dsk ' + F.tone(s.pnl));
+        td(tr, s.n ? F.pct(s.avg) : '—', 'dsk ' + (s.n ? F.tone(s.avg) : ''));
+        td(tr, F.int(s.pos), 'dsk');
+        td(tr, s.pos ? F.money(s.unr) : '—', 'dsk ' + (s.pos ? F.tone(s.unr) : ''));
+        td(tr, s.last ? F.day(s.last) : '—', 'dsk');
+        // 手機：兩行
+        const mc = el('td', 'mob l t two');
+        const top = el('span'); top.appendChild(M.series.has(s.name) ? swatch(s.color, s.dash) : blank()); top.appendChild(document.createTextNode(s.short));
+        if (s.status && s.status !== '啟用') top.appendChild(el('span', 'tag', s.status));
+        mc.appendChild(top);
+        mc.appendChild(el('span', 'sub', s.n || s.pos ? `${s.n} 趟${s.n ? '・' + s.w + '勝' + s.l + '負' : ''}・淨 ${F.money(s.pnl)}${s.pos ? '・持倉 ' + s.pos + '（' + F.money(s.unr) + '）' : ''}` : '還沒有交易'));
+        tr.appendChild(mc);
+        td(tr, F.pct(s.ret), 'mob ' + F.tone(s.ret));
+        td(tr, '', 'chev').appendChild(chev());
+        tb.appendChild(tr);
+      });
+      if (quiet.length) {
+        const q = el('tr', 'quiet');
+        const c = el('td', 't'); c.colSpan = 10;
+        c.appendChild(el('span', 'q-l', `還沒有交易（${quiet.length} 支）`));
+        quiet.forEach((s) => { const n = el('span', 'q-n', s.short); n.title = s.name; if (s.status && s.status !== '啟用') n.appendChild(el('span', 'tag', s.status)); c.appendChild(n); });
+        q.appendChild(c); tb.appendChild(q);
+      }
+    });
+  };
+  const blank = () => { const b = el('span', 'sw'); b.style.width = '22px'; return b; };
+  // 往下一層的箭頭（iOS 清單右邊那個 ›）
+  const chev = () => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', 8); svg.setAttribute('height', 14); svg.setAttribute('viewBox', '0 0 8 14'); svg.setAttribute('aria-hidden', 'true');
+    const p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', 'M1.5 1.5 6.5 7l-5 5.5'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', 2); p.setAttribute('stroke-linecap', 'round'); p.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(p);
+    return svg;
+  };
+
+  const emptyRow = (tb, cols, text) => { const tr = el('tr', 'empty-row'); const c = td(tr, text); c.colSpan = cols; tb.appendChild(tr); };
+
+  const renderPositions = () => {
+    const tb = $('pos-body'); tb.replaceChildren();
+    const rows = M.positions.slice().sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
+    $('pos-meta').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + rows.length + ' 檔' : '';
+    if (!rows.length) { emptyRow(tb, 6, '目前沒有持倉。'); return; }
+    rows.forEach((p) => {
+      const tr = el('tr');
+      two(tr, p.name || p.code, shortOf(p.strategy || '') + '・' + F.day(p.entry_date) + ' 進場', 't dsk');
+      td(tr, p.side === 'short' ? '空' : '多', 't dsk');
+      td(tr, F.lots(p.shares), 'dsk');
+      td(tr, F.price(p.avg_cost), 'dsk');
+      td(tr, F.price(p.close_price), 'dsk');
+      two(tr, F.money(p.unrealized_pnl), F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pnl));
+      const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (p.name || p.code) + '　' + (p.side === 'short' ? '空' : '多') + ' ' + F.lots(p.shares) + ' 張'));
+      mc.appendChild(el('span', 'sub', shortOf(p.strategy || '') + '・均價 ' + F.price(p.avg_cost) + '・收盤 ' + F.price(p.close_price))); tr.appendChild(mc);
+      two(tr, F.pct(p.unrealized_pct), F.money(p.unrealized_pnl), 'mob ' + F.tone(p.unrealized_pnl));
+      tb.appendChild(tr);
+    });
+  };
+
+  const renderTrips = () => {
+    const tb = $('tr-body'); tb.replaceChildren();
+    const key = (t) => t.d + ' ' + F.hm(t.exit_time);
+    const all = M.trips.slice().sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const rows = all.slice(0, Math.max(5, Math.min(8, M.positions.length + 2)));
+    $('tr-meta').textContent = all.length > rows.length ? `最近 ${rows.length} 趟，共 ${all.length} 趟` : `共 ${all.length} 趟`;
+    if (!rows.length) { emptyRow(tb, 6, '還沒有出場紀錄。'); return; }
+    rows.forEach((t) => {
+      const tr = el('tr');
+      two(tr, t.name || t.code, shortOf(t.strategy || '') + '・' + (t.trade_type === 'daytrade' ? '當沖' : '波段'), 't dsk');
+      two(tr, F.day(t.d), F.hm(t.exit_time), 'dsk');
+      td(tr, t.side === 'short' ? '空' : '多', 't dsk');
+      td(tr, F.price(t.entry_price), 'dsk');
+      td(tr, F.price(t.exit_price), 'dsk');
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'dsk ' + F.tone(t.return_pct));
+      const mc = el('td', 'mob l t two'); mc.appendChild(el('span', null, (t.name || t.code) + '　' + (t.side === 'short' ? '空' : '多') + ' ' + F.price(t.entry_price) + ' → ' + F.price(t.exit_price)));
+      mc.appendChild(el('span', 'sub', F.day(t.d) + ' ' + F.hm(t.exit_time) + '・' + shortOf(t.strategy || '') + '・' + F.lots(t.shares) + ' 張')); tr.appendChild(mc);
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'mob ' + F.tone(t.return_pct));
+      tb.appendChild(tr);
+    });
+  };
+
+
+  // ---- 下一層：單一策略的明細（網址 #s=策略名稱，可以直接分享） ----
+  const PAGE = 50;
+  let cur = null, dMode = 'trips', dStock = null, dShown = PAGE, dData = null;
+  const sideOf = (v) => (v === 'short' ? '空' : '多');
+  const secs = (v) => { const m = /(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(v || '')); return m ? +m[1] * 3600 + +m[2] * 60 + +(m[3] || 0) : null; };
+  const daysBetween = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
+  // 持有時間：當天進出算到秒，跨日算天數
+  const holdOf = (t) => {
+    const a = F.iso(t.entry_date), b = F.iso(t.exit_date);
+    if (a && b && a !== b) return daysBetween(a, b) + ' 天';
+    const s1 = secs(t.entry_time), s2 = secs(t.exit_time);
+    const v = s1 != null && s2 != null && s2 >= s1 ? s2 - s1 : t.hold_minutes != null ? Math.round(t.hold_minutes * 60) : null;
+    if (v == null) return '—';
+    const m = Math.floor(v / 60), r = v % 60;
+    if (v < 60) return r + ' 秒';
+    if (v < 600) return m + ' 分' + (r ? ' ' + r + ' 秒' : '');
+    if (v < 3600) return m + ' 分';
+    return Math.floor(m / 60) + ' 時 ' + (m % 60) + ' 分';
+  };
+  const heldOf = (p) => { const a = F.iso(p.entry_date), b = F.iso(p.date); if (!a || !b) return '—'; const n = daysBetween(a, b); return n > 0 ? n + ' 天' : '當天進場'; };
+  // 勝負只看價差（和總覽同一個算法）
+  const winOf = (t) => {
+    const d = t.gross_pnl != null ? t.gross_pnl : t.entry_price != null && t.exit_price != null ? (t.side === 'short' ? t.entry_price - t.exit_price : t.exit_price - t.entry_price) : 0;
+    return d > 0 ? 1 : d < 0 ? -1 : 0;
+  };
+  const when = (d, t) => (F.day(d) + ' ' + F.hms(t)).trim();
+  const stockLine = (code, name, rest) => { const sp = el('span'); if (code) sp.appendChild(el('span', 'code', code)); sp.appendChild(document.createTextNode((name || '') + (rest ? '　' + rest : ''))); return sp; };
+
+  const renderDetail = () => {
+    const name = cur;
+    const s = M && M.strat.find((x) => x.name === name);
+    const short = s ? s.short : shortOf(name);
+    document.title = short + '｜QTW 策略';
+    $('d-name').textContent = short;
+    const sub = $('d-sub'); sub.replaceChildren();
+    if (!M) return;  // 資料還沒讀到：先顯示名稱，讀到後再畫
+    const cards = ['d-perf', 'd-tr-card'];
+    if (!s) {
+      $('d-name').textContent = '找不到這支策略';
+      $('d-finding').textContent = '試算表裡沒有「' + name + '」，可能改過名字。回到策略績效再點一次。';
+      cards.forEach((id) => ($(id).hidden = true)); $('d-pos-card').hidden = true; dData = null;
+      return;
+    }
+    cards.forEach((id) => ($(id).hidden = false));
+    sub.appendChild(el('span', null, [s.name !== s.short ? s.name : null, s.cat].filter(Boolean).join('・')));
+    if (s.status && s.status !== '啟用') sub.appendChild(el('span', 'tag', s.status));
+
+    const trips = M.trips.filter((t) => t.strategy === name);
+    const pos = M.positions.filter((p) => p.strategy === name).sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
+    const dts = [...new Set(trips.map((t) => t.d))].sort();
+    const byDay = d3.rollup(trips, (v) => ({ r: d3.sum(v, (t) => t.return_pct || 0), n: v.length, p: d3.sum(v, (t) => t.net_pnl || 0) }), (t) => t.d);
+    // 依股票彙總：交易過的和現在持有的都算
+    const stocks = new Map();
+    const stockOf = (code, nm) => { const k = code || nm || '—'; if (!stocks.has(k)) stocks.set(k, { code: code || '', name: nm || '', n: 0, w: 0, l: 0, t: 0, ret: 0, pnl: 0, last: '', held: false }); return stocks.get(k); };
+    trips.forEach((t) => { const o = stockOf(t.code, t.name); o.n++; const w = winOf(t); if (w > 0) o.w++; else if (w < 0) o.l++; else o.t++; o.ret += t.return_pct || 0; o.pnl += t.net_pnl || 0; if (t.d > o.last) o.last = t.d; if (t.name) o.name = t.name; });
+    pos.forEach((p) => { const o = stockOf(p.code, p.name); o.held = true; });
+    dData = { s, trips, pos, stocks: [...stocks.values()].sort((a, b) => ((b.held ? M.lastPosDate : '') || b.last).localeCompare((a.held ? M.lastPosDate : '') || a.last) || b.n - a.n) };
+
+    // 一句話：最近一次出場的結果，和持倉狀況
+    const f = $('d-finding'); f.replaceChildren();
+    const add = (t, cls) => f.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
+    if (!trips.length && !pos.length) add('還沒有交易紀錄，第一次進場後會出現在這裡。');
+    if (dts.length) {
+      const d = dts[dts.length - 1], b = byDay.get(d);
+      add('最近一次出場是 ' + F.day(d) + '，'); add(String(b.n), 'n'); add(' 趟淨損益 '); add(F.money(b.p) + ' 元', 'n ' + F.tone(b.p)); add('。');
+    }
+    if (pos.length) {
+      const w = pos[0];
+      add('持倉 '); add(String(pos.length), 'n');
+      if ((w.unrealized_pct ?? 0) < 0) { add(' 檔，' + (w.name || w.code) + ' 跌最多 '); add(F.pct(w.unrealized_pct), 'n down'); add('。'); } else add(' 檔都在成本之上。');
+    } else if (trips.length) add('目前沒有持倉。');
+
+    const ret = d3.sum(trips, (t) => t.return_pct || 0), pnl = d3.sum(trips, (t) => t.net_pnl || 0);
+    const W = trips.filter((t) => winOf(t) > 0).length, L = trips.filter((t) => winOf(t) < 0).length, T = trips.length - W - L;
+    const lv = $('d-lead'); lv.textContent = F.pct(ret); lv.className = 'lead-v ' + F.tone(ret);
+    const ls = $('d-lead-s'); ls.replaceChildren(document.createTextNode('已實現，'), el('span', 'n', F.int(trips.length)), document.createTextNode(' 趟' + (dts.length ? '・' + F.day(dts[0]) + ' 到 ' + F.day(dts[dts.length - 1]) : '')));
+
+    const kv = $('d-kv'); kv.replaceChildren();
+    const row = (label, value, tone, small) => { const d = el('div'); d.appendChild(el('dt', null, label)); const v = el('dd', tone || null, value); if (small) v.appendChild(el('small', null, small)); d.appendChild(v); kv.appendChild(d); };
+    const unr = d3.sum(pos, (p) => p.unrealized_pnl || 0);
+    row('已實現淨損益', trips.length ? F.money(pnl) : '—', F.tone(pnl), trips.length ? '元' : '');
+    row('勝率', trips.length ? F.rate(W / trips.length) : '—', '', trips.length ? `${W} 勝 ${L} 負${T ? ' ' + T + ' 平' : ''}` : '');
+    row('平均每趟', trips.length ? F.pct(ret / trips.length) : '—', trips.length ? F.tone(ret) : '');
+    row('交易過的股票', F.int(dData.stocks.filter((o) => o.n).length), '', '檔');
+    row('持倉', F.int(pos.length), '', '檔');
+    row('未實現損益', pos.length ? F.money(unr) : '—', pos.length ? F.tone(unr) : '', pos.length ? '元' : '');
+
+    let c = 0; const cum = dts.map((d) => (c += byDay.get(d).r));
+    highLine(ls, cum, dts);
+    dChart =() => plot($('d-chart'), $('d-chart-empty'), { dates: dts, main: { v: cum, name: short }, emptyText: '還沒有出場紀錄，第一趟出場後會畫出走勢。', label: short + ' 累積報酬走勢', note: (i) => { const b = byDay.get(dts[i]); return `當天 ${b.n} 趟・淨 ${F.money(b.p)} 元`; } });
+    dChart();
+
+    // 目前持倉：沒有就整張卡收起來（上面那句話已經說了）
+    $('d-pos-card').hidden = !pos.length;
+    $('d-pos-meta').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + pos.length + ' 檔' : '';
+    const pb = $('d-pos-body'); pb.replaceChildren();
+    pos.forEach((p) => {
+      const tr = el('tr');
+      td(tr, p.code || '—', 'dsk');
+      td(tr, p.name || '', 't l dsk');
+      td(tr, sideOf(p.side), 't dsk');
+      td(tr, F.lots(p.shares), 'dsk');
+      td(tr, F.day(p.entry_date), 'dsk');
+      td(tr, heldOf(p), 'dsk');
+      td(tr, F.price(p.avg_cost), 'dsk');
+      td(tr, F.price(p.close_price), 'dsk');
+      two(tr, F.money(p.unrealized_pnl), F.pct(p.unrealized_pct), 'dsk ' + F.tone(p.unrealized_pnl));
+      const mc = el('td', 'mob l t two');
+      mc.appendChild(stockLine(p.code, p.name, sideOf(p.side) + ' ' + F.lots(p.shares) + ' 張'));
+      mc.appendChild(el('span', 'sub', F.day(p.entry_date) + ' 進場・持有 ' + heldOf(p)));
+      mc.appendChild(el('span', 'sub', '均價 ' + F.price(p.avg_cost) + '・收盤 ' + F.price(p.close_price)));
+      tr.appendChild(mc);
+      two(tr, F.pct(p.unrealized_pct), F.money(p.unrealized_pnl), 'mob ' + F.tone(p.unrealized_pnl));
+      pb.appendChild(tr);
+    });
+    renderDetailList();
+  };
+  let dChart = () => {};
+
+  // 交易紀錄：逐筆／依股票兩種看法
+  const renderDetailList = () => {
+    if (!dData) return;
+    const { trips, stocks } = dData;
+    document.querySelectorAll('#d-tr-card .seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === dMode)));
+    $('d-tr-meta').textContent = `共 ${trips.length} 趟・${stocks.filter((o) => o.n).length} 檔股票`;
+    const chip = $('d-chip'); chip.replaceChildren();
+    $('d-trips').hidden = dMode !== 'trips'; $('d-stocks').hidden = dMode !== 'stocks';
+    const more = $('d-more-wrap'); more.hidden = true;
+    if (dMode === 'stocks') {
+      const tb = $('d-st-body'); tb.replaceChildren();
+      if (!stocks.length) { emptyRow(tb, 8, '還沒有交易過任何股票。'); return; }
+      stocks.forEach((o) => {
+        const tr = el('tr', o.n ? 'row' : '');
+        if (o.n) { tr.tabIndex = 0; tr.dataset.code = o.code || o.name; tr.title = '看 ' + (o.name || o.code) + ' 的每一趟'; }
+        td(tr, o.code || '—', 'dsk');
+        const nc = td(tr, o.name, 't l dsk'); if (o.held) nc.appendChild(el('span', 'tag', '持倉中'));
+        td(tr, F.int(o.n), 'dsk');
+        two(tr, o.n ? F.rate(o.w / o.n) : '—', o.n ? `${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}` : null, 'dsk');
+        td(tr, o.n ? F.pct(o.ret) : '—', 'dsk ' + (o.n ? F.tone(o.ret) : ''));
+        td(tr, o.n ? F.money(o.pnl) : '—', 'dsk ' + (o.n ? F.tone(o.pnl) : ''));
+        td(tr, o.last ? F.day(o.last) : '—', 'dsk');
+        const mc = el('td', 'mob l t two');
+        const top = stockLine(o.code, o.name); if (o.held) top.appendChild(el('span', 'tag', '持倉中')); mc.appendChild(top);
+        mc.appendChild(el('span', 'sub', o.n ? `${o.n} 趟・${o.w}勝${o.l}負${o.t ? o.t + '平' : ''}・淨 ${F.money(o.pnl)}` : '還沒有出場'));
+        if (o.n) mc.appendChild(el('span', 'sub', '最近出場 ' + F.day(o.last)));
+        tr.appendChild(mc);
+        td(tr, o.n ? F.pct(o.ret) : '—', 'mob ' + (o.n ? F.tone(o.ret) : ''));
+        const cc = td(tr, '', 'chev'); if (o.n) cc.appendChild(chev());
+        tb.appendChild(tr);
+      });
+      return;
+    }
+    if (dStock) {
+      const o = stocks.find((x) => (x.code || x.name) === dStock);
+      const b = el('button', 'filter'); b.type = 'button'; b.textContent = '只看 ' + (o ? (o.code + ' ' + o.name).trim() : dStock) + '  ✕'; b.title = '顯示全部股票';
+      b.addEventListener('click', () => { dStock = null; dShown = PAGE; renderDetailList(); });
+      chip.appendChild(b);
+    }
+    const key = (t) => t.d + ' ' + F.hms(t.exit_time);
+    const list = trips.filter((t) => !dStock || (t.code || t.name) === dStock).sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const tb = $('d-tr-body'); tb.replaceChildren();
+    if (!list.length) { emptyRow(tb, 10, '還沒有出場紀錄。'); return; }
+    list.slice(0, dShown).forEach((t) => {
+      const tr = el('tr');
+      td(tr, t.code || '—', 'dsk');
+      td(tr, t.name || '', 't l dsk');
+      td(tr, sideOf(t.side), 't dsk');
+      td(tr, F.lots(t.shares), 'dsk');
+      td(tr, when(t.entry_date, t.entry_time), 'dsk');
+      td(tr, F.price(t.entry_price), 'dsk');
+      td(tr, when(t.d, t.exit_time), 'dsk');
+      td(tr, F.price(t.exit_price), 'dsk');
+      td(tr, holdOf(t), 'dsk');
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'dsk ' + F.tone(t.return_pct));
+      const mc = el('td', 'mob l t two');
+      mc.appendChild(stockLine(t.code, t.name, sideOf(t.side) + ' ' + F.lots(t.shares) + ' 張'));
+      mc.appendChild(el('span', 'sub', '進 ' + when(t.entry_date, t.entry_time) + '・' + F.price(t.entry_price)));
+      // 當天進出的，出場那行省略日期，手機才放得下
+      mc.appendChild(el('span', 'sub', '出 ' + (F.iso(t.entry_date) === t.d ? F.hms(t.exit_time) || F.day(t.d) : when(t.d, t.exit_time)) + '・' + F.price(t.exit_price) + '・' + holdOf(t)));
+      tr.appendChild(mc);
+      two(tr, F.pct(t.return_pct), F.money(t.net_pnl), 'mob ' + F.tone(t.return_pct));
+      tb.appendChild(tr);
+    });
+    if (list.length > dShown) { more.hidden = false; $('d-more').textContent = `再顯示 ${Math.min(PAGE, list.length - dShown)} 趟（還有 ${list.length - dShown} 趟）`; }
+  };
+
+  // ---- 兩層之間切換 ----
+  let homeY = 0, pushed = false;
+  const readHash = () => { const m = /^#s=(.+)$/.exec(location.hash); if (!m) return null; try { return decodeURIComponent(m[1]); } catch (e) { return null; } };
+  const route = () => {
+    const name = readHash();
+    const was = cur;
+    cur = name;
+    $('home').hidden = !!name; $('detail').hidden = !name;
+    $('mark').hidden = !!name; $('back').hidden = !name;
+    hiders.forEach((h) => h());
+    if (name) {
+      if (name !== was) { dMode = 'trips'; dStock = null; dShown = PAGE; window.scrollTo(0, 0); }
+      renderDetail();
+    } else {
+      document.title = 'QTW 策略績效';
+      if (M) renderChart();
+      if (was) window.scrollTo(0, homeY);
+    }
+  };
+  const openStrategy = (name) => { homeY = window.scrollY; pushed = true; location.hash = 's=' + encodeURIComponent(name); };
+  const goBack = () => { if (pushed) { pushed = false; history.back(); } else { history.replaceState(null, '', location.pathname + location.search); route(); } };
+
+  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderCalendar(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
+
+  // 手機：手指放開後提示留著，點圖以外的地方才收起來
+  document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart, button.cal-d')) hiders.forEach((h) => h()); }, { passive: true });
+
+  // 電腦每個交易日 14:00 推送。從今天往回數：有幾個平日已經過了 15:00，但那天之後都沒有推送。
+  // 一律用台北時間算（台灣沒有夏令時間，直接加 8 小時），在國外打開也一樣。
+  // 少一天不算（可能是休市），連續兩個平日沒推送才提醒；週末不算，所以週一早上不會誤報。
+  const TPE = 8 * 3600e3;
+  const missedPushes = (pushT) => {
+    const nowT = Date.now() + TPE;
+    const today = Math.floor(nowT / 864e5) * 864e5;
+    let missed = 0;
+    for (let k = 0; k < 21; k++) {
+      const day = today - k * 864e5, wd = new Date(day).getUTCDay();
+      if (wd === 0 || wd === 6 || day + 15 * 3600e3 > nowT) continue;
+      if (pushT >= day) break;
+      missed++;
+    }
+    return missed;
+  };
+
+  let busy = false, lastOk = null;
+  const refresh = async () => {
+    if (busy) return; busy = true;
+    $('loaded').textContent = '讀取中…';
+    try {
+      if (API_URL) D = await loadApi();
+      else {
+        const keys = Object.keys(SRC);
+        const vals = await Promise.all(keys.map((k) => (SRC[k].optional ? load(k).catch(() => []) : load(k))));
+        D = Object.fromEntries(keys.map((k, i) => [k, vals[i]]));
+      }
+      $('err').hidden = true;
+      renderAll();
+      lastOk = new Date();
+      const hhmm = lastOk.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const pushed = (D.sync || []).map((r) => /(\d{4})\D(\d{1,2})\D(\d{1,2})\D+(\d{1,2}):(\d{2})/.exec(String(r['同步時間'] || ''))).filter(Boolean).pop();
+      const lb = $('loaded');
+      if (pushed) {
+        const pushT = Date.UTC(+pushed[1], pushed[2] - 1, +pushed[3], +pushed[4], +pushed[5]);  // 試算表寫的是台北時間
+        lb.textContent = '電腦 ' + (+pushed[2]) + '/' + (+pushed[3]) + ' ' + pushed[4].padStart(2, '0') + ':' + pushed[5] + ' 推送';
+        lb.classList.toggle('stale', missedPushes(pushT) >= 2);
+        if (lb.classList.contains('stale')) lb.textContent += '・很久沒更新';
+      } else { lb.textContent = hhmm + ' 讀取'; lb.classList.remove('stale'); }
+      lb.title = '網頁 ' + hhmm + ' 讀取試算表';
+    } catch (e) {
+      $('err').hidden = false;
+      const why = /api not public/.test(e.message) ? '資料來源沒有開放：Apps Script 部署的「誰可以存取」要選「所有人」。'
+        : /not shared/.test(e.message) ? '請確認「策略管理」的共用設定是「知道連結的任何人 → 檢視者」。'
+        : /Failed to fetch|NetworkError|Load failed/i.test(e.message) ? '網路連不上 Google，等一下再試。'
+        : '讀取「' + e.message.split(' ')[0] + '」時出錯（' + e.message + '）。';
+      $('err-msg').textContent = lastOk
+        ? '這次沒讀到，畫面是 ' + lastOk.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' 的資料。' : why;
+      $('loaded').textContent = lastOk ? '更新失敗' : '沒有讀到資料';
+      if (!D) { $('finding').textContent = '等試算表讀到後顯示。'; $('d-finding').textContent = '等試算表讀到後顯示。'; document.querySelectorAll('.skel').forEach((k) => k.replaceWith(document.createTextNode('—'))); }
+    } finally { busy = false; }
+  };
+
+  // 列可以點也可以用鍵盤（Enter／空白鍵）
+  const onRow = (tb, fn) => {
+    tb.addEventListener('click', (ev) => { const tr = ev.target.closest('tr.row'); if (tr) fn(tr); });
+    tb.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { const tr = ev.target.closest('tr.row'); if (tr) { ev.preventDefault(); fn(tr); } } });
+  };
+  onRow($('st-body'), (tr) => openStrategy(tr.dataset.strategy));
+  onRow($('d-st-body'), (tr) => { dStock = tr.dataset.code; dMode = 'trips'; dShown = PAGE; renderDetailList(); });
+  document.querySelectorAll('#d-tr-card .seg button').forEach((b) => b.addEventListener('click', () => { if (dMode === b.dataset.mode) return; dMode = b.dataset.mode; dStock = null; dShown = PAGE; renderDetailList(); }));
+  $('d-more').addEventListener('click', () => { dShown += PAGE; renderDetailList(); });
+  $('back').addEventListener('click', goBack);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && cur && !ev.defaultPrevented) goBack(); });
+  window.addEventListener('hashchange', route);
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  // 獲利日曆：切月份、滑過或點格子看當天明細
+  const calGo = (k) => { calPinned = true; calMonth = monthAdd(calMonth, k); calHide(); renderCalendar(); };
+  $('cal-prev').addEventListener('click', () => calGo(-1));
+  $('cal-next').addEventListener('click', () => calGo(1));
+  const cg = $('cal-grid');
+  cg.addEventListener('pointerover', (ev) => { const b = ev.target.closest('button.cal-d'); if (b && ev.pointerType !== 'touch') calShow(b); });
+  cg.addEventListener('pointerleave', (ev) => { if (ev.pointerType !== 'touch') calHide(); });
+  cg.addEventListener('click', (ev) => { const b = ev.target.closest('button.cal-d'); if (b) calShow(b); });
+  cg.addEventListener('focusin', (ev) => { const b = ev.target.closest('button.cal-d'); if (b) calShow(b); });
+  cg.addEventListener('focusout', (ev) => { if (!cg.contains(ev.relatedTarget)) calHide(); });
+  $('reload').addEventListener('click', refresh);
+  $('retry').addEventListener('click', refresh);
+  let rw = 0; window.addEventListener('resize', () => { clearTimeout(rw); rw = setTimeout(() => { if (!M) return; if (cur) dChart(); else renderChart(); }, 150); });
+  // 深淺色切換：預設深色，點過就記在這台裝置
+  const themeBtn = () => { const t = themeNow() === 'light' ? '切換成深色' : '切換成淺色'; $('theme').setAttribute('aria-label', t); $('theme').title = t; };
+  $('theme').addEventListener('click', () => {
+    const t = themeNow() === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t; store.set('qtw-theme', t); themeBtn();
+    if (D) renderAll();
+  });
+  themeBtn();
+  setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && D) refresh(); });
+  route();
+  refresh();
+})();
+</script>
+</body>
+</html>

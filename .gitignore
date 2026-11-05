@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+sync/sheet_sync.json
+sync/sheet_sync_state.json
