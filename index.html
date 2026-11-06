@@ -171,6 +171,7 @@
   .cal-wd { font-size: 12px; color: var(--muted); text-align: center; padding-bottom: 2px; letter-spacing: .02em; }
   .cal-d { position: relative; min-height: 76px; min-width: 0; border: 0; border-radius: 8px; padding: 8px 10px; background: var(--raised); color: var(--text); display: flex; flex-direction: column; justify-content: space-between; gap: 2px; text-align: left; font: inherit; }
   .cal-d.empty { background: transparent; }
+  .cal-d.slim { min-height: 30px; padding-block: 5px; justify-content: center; }
   .cal-d.future, .cal-d.pre { opacity: .4; }
   .cal-d .dn { font-family: var(--num); font-size: 12px; color: var(--muted); line-height: 1.2; }
   .cal-d.today .dn { color: var(--link); font-weight: 700; }
@@ -197,7 +198,7 @@
   .cal-sw.g1 { margin-right: 4px; } .cal-sw.g4 { margin-left: 4px; } .cal-sw.r4 { margin-right: 4px; }
   .cal .tip { min-width: 190px; }
   /* 策略比較泡泡圖 */
-  .bub-chart { margin: 0; padding: 0 var(--pad) 12px; min-height: 0; height: 340px; flex: none; }
+  .bub-chart { margin: 0; padding: 0 var(--pad) 12px; min-height: 0; height: 280px; flex: none; }
   .bub-chart svg .b { cursor: pointer; outline: none; }
   .bub-chart svg .b .ring-f { display: none; }
   .bub-chart svg .b:focus-visible .ring-f { display: inline; }
@@ -244,6 +245,7 @@
   .filter { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised); color: var(--link); cursor: pointer; font-size: 13px; font-weight: 500; }
   .empty-row td { height: 44px; color: var(--muted); font-family: var(--font); font-weight: 400; text-align: left; letter-spacing: 0; }
   .two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: start; }
+  .two-col.solo { grid-template-columns: 1fr; }
   .foot { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.7; }
 
   td.l, th.l { text-align: left; }
@@ -292,7 +294,7 @@
     .two-col { grid-template-columns: 1fr; }
   }
   @media (max-width: 640px) {
-    .bub-chart { height: 300px; }
+    .chart.bub-chart { height: 260px; }
     .bar-in { padding-inline: 16px; gap: 8px; }
     .mark span { display: none; }
     .page { padding-inline: 16px; padding-top: 16px; }
@@ -307,12 +309,14 @@
     .chart.short { height: 200px; }
     .cal-grid { gap: 3px; padding-top: 10px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .cal-d { min-height: 54px; padding: 6px 5px; border-radius: 6px; }
+    .cal-d.slim { min-height: 26px; padding-block: 3px; }
     .cal-d .dn { font-size: 11px; }
     .cal-d .pv { font-size: 12px; letter-spacing: -0.03em; }
     .cal-d .pv .l { display: none; }
     .cal-d .pv .s { display: inline; }
     .cal-d .ps { display: none; }
     .cal-m { min-width: 6.5em; }
+    .kpi-s, .kpi-l, .meta, .lead-s, td .sub, th, .idle, .foot, .d-sub { font-size: 13px; }
     .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .kpi:nth-child(n) { border-left: 0; border-top: 0; }
     .kpi-lead { grid-column: 1 / -1; border-radius: var(--radius) var(--radius) 0 0; }
@@ -587,7 +591,7 @@
 
   let D = null;           // 讀到的原始資料
   let M = null;           // 算好的模型
-  const MAX_DEFAULT = 6;  // 預設最多疊 6 條策略線（趟數最多的），其他要自己點開
+  const MAX_DEFAULT = 0;  // 預設只畫總績效，策略線要在右邊清單點開（使用者點過的會記住）
   let choice = store.get('qtw-lines') || {};  // 使用者點過的開關：{策略: true/false}
   let hidden = new Set();
 
@@ -1126,11 +1130,12 @@
     };
     rows.forEach((r) => {
       let wr = 0, wn = 0;
+      const slim = r.filter(Boolean)[0] > today ? ' slim' : '';  // 整週都還沒到：只留日期，矮一點
       r.forEach((iso) => {
-        if (!iso) { grid.appendChild(el('div', 'cal-d empty')); return; }
+        if (!iso) { grid.appendChild(el('div', 'cal-d empty' + slim)); return; }
         const o = days.get(iso), dn = String(Number(iso.slice(8)));
         // 開始有實盤紀錄之前、和今天之後的日子變淡
-        const cls = 'cal-d' + (iso > today ? ' future' : '') + (M.dates.length && iso < M.dates[0] ? ' pre' : '') + (iso === today ? ' today' : '');
+        const cls = 'cal-d' + slim + (iso > today ? ' future' : '') + (M.dates.length && iso < M.dates[0] ? ' pre' : '') + (iso === today ? ' today' : '');
         if (!o) { const c = el('div', cls); c.appendChild(el('span', 'dn', dn)); grid.appendChild(c); return; }
         wr += o.r; wn += o.n;
         const c = el('button', cls + ' tint ' + tintOf(o.r)); c.type = 'button'; c.dataset.day = iso;
@@ -1139,7 +1144,7 @@
         grid.appendChild(c);
       });
       const wFirst = r.find(Boolean), wLast = r.filter(Boolean).pop();
-      const w = el('div', 'cal-d wk' + (wn ? ' tint ' + tintOf(wr) : wFirst > today ? ' future' : M.dates.length && wLast < M.dates[0] ? ' pre' : ''));
+      const w = el('div', 'cal-d wk' + slim + (wn ? ' tint ' + tintOf(wr) : wFirst > today ? ' future' : M.dates.length && wLast < M.dates[0] ? ' pre' : ''));
       if (wn) { w.appendChild(el('span', 'dn', '週')); value(w, wr, wn); }
       grid.appendChild(w);
     });
@@ -1316,6 +1321,7 @@
     const tb = $('pos-body'); tb.replaceChildren();
     const rows = M.positions.slice().sort((a, b) => (a.unrealized_pct ?? 0) - (b.unrealized_pct ?? 0));
     $('pos-meta').textContent = M.lastPosDate ? F.day(M.lastPosDate) + ' 收盤・' + rows.length + ' 檔' : '';
+    const card = tb.closest('section'); card.hidden = !rows.length; card.parentElement.classList.toggle('solo', !rows.length);
     if (!rows.length) { emptyRow(tb, 5, '目前沒有持倉。'); return; }
     rows.forEach((p) => {
       const tr = el('tr');
