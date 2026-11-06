@@ -495,7 +495,7 @@
   //                  它只回傳下面 4 個分頁，試算表本身維持「限制」不公開
   //   API_URL 空白 → 用 gviz 直接讀，試算表要開「知道連結的任何人 → 檢視者」
   // 只讀原始分頁（電腦同步寫入的值和策略對照），所有統計都在這裡算；總覽那些公式頁可以隨意改，不影響網頁。
-  const API_URL = '';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzEDh2J4jPisG5x6T0WFtehI8zLncwemyU6i1jJ1nSyHgHaO6MkzNQv2IrRGKEi_cK4Cw/exec';
   const SHEET_ID = '1ZF5fgJgwMrs5sfUYWTpfX0HI9zoZlQL9WxcU4QeZL7U';
   const SRC = {
     strategies: { sheet: '策略對照', range: 'A1:G', text: ['策略', '狀態', '上線日', '備註', '分類'] },
