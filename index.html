@@ -13,35 +13,37 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&display=swap">
 <style>
   /*
     設計系統（UI UX Pro Max：Financial Dashboard → Dark Mode (OLED) + Data-Dense Dashboard，輔以 Minimalism & Swiss Style）
+    - 主視覺「深海金」（11/8 使用者選 A）：深海藍底＋金色主色，總績效線、logo、累積報酬那格的光暈都用金色，和創新高點同一色系
     - 預設深色，可切淺色；顏色用語意 token，元件裡不寫死色碼
-    - 字：數字用 Fira Code（等寬，欄位對齊不跳動），文字用 Fira Sans＋思源黑體
+    - 字：標題用思源宋體（Noto Serif TC），數字用 Fira Code（等寬，欄位對齊不跳動），文字用 Fira Sans＋思源黑體
     - 密度：間距 8 的倍數，卡片內距 16px，表格列高 40px（觸控 44px）
-    - 顏色只放在資料上：總績效用信任藍，各策略依分類分色系＋線條樣式，紅賺綠賠（台股慣例）只用在數字
+    - 顏色只放在資料上：總績效用金色，各策略依分類分色系＋線條樣式，紅賺綠賠（台股慣例）只用在數字
   */
   :root {
-    --ground: #020617; --surface: #0b1222; --raised: #111a2e; --active: #1a2338;
-    --border: #1e293b; --rule: #162036; --control: #334155;
-    --text: #f8fafc; --muted: #94a3b8; --faint: #7c8ba1;
-    --accent: #3b82f6; --accent-soft: rgba(59,130,246,.14); --link: #60a5fa;
-    --up: #f87171; --down: #4ade80; --grid: #1a2438; --zero: #475569; --seg-on: #334155; --peak: #deb06c;
+    --ground: #060a12; --surface: #0c1320; --raised: #121b2c; --active: #1a2539;
+    --border: #1f2a3b; --rule: #151e2d; --control: #36435b;
+    --text: #f4f1ea; --muted: #a9b2c2; --faint: #8b95a8;
+    --accent: #d9a84e; --accent-soft: rgba(217,168,78,.13); --link: #ecc06b; --glow: rgba(217,168,78,.24);
+    --up: #f87171; --down: #4ade80; --grid: #182130; --zero: #4b5568; --seg-on: #2b3650; --peak: #fff3d6;
     --ok-bg: rgba(74,222,128,.12); --ok: #4ade80; --bad-bg: rgba(248,113,113,.14); --bad: #fca5a5;
     --warn: #fbbf24; --warn-bg: rgba(251,191,36,.14); --danger: #fb7185; --danger-bg: rgba(251,113,133,.16);
     --tip-shadow: 0 8px 24px rgba(0,0,0,.5);
     --font: "Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
     --num: "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --gap: 12px; --pad: 16px; --radius: 10px; --radius-control: 8px; --hit: 36px; --row: 40px;
     color-scheme: dark;
   }
   :root[data-theme="light"] {
-    --ground: #f1f5f9; --surface: #ffffff; --raised: #f8fafc; --active: #e2e8f0;
-    --border: #e2e8f0; --rule: #eef2f6; --control: #cbd5e1;
-    --text: #0f172a; --muted: #475569; --faint: #64748b;
-    --accent: #2563eb; --accent-soft: rgba(37,99,235,.10); --link: #1d4ed8;
-    --up: #dc2626; --down: #15803d; --grid: #e8edf3; --zero: #94a3b8; --seg-on: #ffffff; --peak: #a87a22;
+    --ground: #f2f3f5; --surface: #ffffff; --raised: #f8f8fa; --active: #e9ebef;
+    --border: #e3e6eb; --rule: #eef0f3; --control: #c8ced8;
+    --text: #0c1424; --muted: #4a5568; --faint: #5e6878;
+    --accent: #9a6b12; --accent-soft: rgba(154,107,18,.10); --link: #7a5310; --glow: rgba(154,107,18,.16);
+    --up: #dc2626; --down: #15803d; --grid: #eceef2; --zero: #9aa3b2; --seg-on: #ffffff; --peak: #1f2a44;
     --ok-bg: #dcfce7; --ok: #166534; --bad-bg: #fee2e2; --bad: #991b1b;
     --warn: #a16207; --warn-bg: #fef3c7; --danger: #be123c; --danger-bg: #ffe4e6;
     --tip-shadow: 0 8px 24px rgba(15,23,42,.12);
@@ -64,7 +66,7 @@
   .bar-in { max-width: 1280px; margin-inline: auto; height: 56px; display: flex; align-items: center; gap: 12px; padding-inline: max(24px, env(safe-area-inset-left, 0px)) max(24px, env(safe-area-inset-right, 0px)); }
   .mark { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mark svg { flex: none; }
-  .mark b { font-size: 16px; font-weight: 700; letter-spacing: .01em; white-space: nowrap; }
+  .mark b { font-family: var(--serif); font-size: 16px; font-weight: 700; letter-spacing: .06em; white-space: nowrap; }
   .mark span { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .fresh { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
   .fresh .stale { color: var(--up); font-weight: 600; }
@@ -78,7 +80,7 @@
   /* 畫布 */
   .page { max-width: 1280px; margin-inline: auto; padding: 20px max(24px, env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: var(--gap); }
   .title { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
-  h1 { margin: 0; font-size: 24px; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; }
+  h1 { margin: 0; font-family: var(--serif); font-size: 28px; font-weight: 700; line-height: 1.25; letter-spacing: .03em; }
   .title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn.primary:hover { filter: brightness(1.1); background: var(--accent); }
@@ -99,7 +101,7 @@
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 0; }
   .card-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 14px var(--pad) 0; }
-  h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+  h2 { margin: 0; font-family: var(--serif); font-size: 16px; font-weight: 700; letter-spacing: .04em; }
   .meta { font-size: 12px; color: var(--muted); }
   .legend-hi { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
 
@@ -120,9 +122,9 @@
   .risk.lv2 { color: var(--danger); background: var(--danger-bg); padding: 1px 7px 1px 5px; border-radius: 5px; }
   .risk.lv2::before { content: "!"; width: 13px; height: 13px; display: inline-grid; place-items: center; font-size: 10px; font-weight: 800; color: var(--surface); background: var(--danger); opacity: 1; }
   .kpi-v.risk-v { font-size: 17px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
-  .kpi-lead { background: linear-gradient(var(--accent-soft), var(--accent-soft)); border-radius: var(--radius) 0 0 var(--radius); }
+  .kpi-lead { background: radial-gradient(140% 160% at 0% 0%, var(--glow), var(--accent-soft) 55%, transparent); border-radius: var(--radius) 0 0 var(--radius); }
   .lead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
-  .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; }
+  .lead-v { font-family: var(--num); font-variant-numeric: tabular-nums; font-variant-ligatures: none; font-size: 36px; font-weight: 700; line-height: 1.15; letter-spacing: -0.03em; }
   .lead-s { font-size: 12px; color: var(--muted); }
   .lead-s .n { color: var(--text); font-weight: 500; }
   .lead-s .hl { display: block; margin-top: 4px; }
@@ -299,8 +301,8 @@
     .mark span { display: none; }
     .page { padding-inline: 16px; padding-top: 16px; }
     :root { --pad: 14px; --hit: 44px; --row: 44px; }
-    h1 { font-size: 22px; }
-    .lead-v { font-size: 30px; }
+    h1 { font-size: 24px; }
+    .lead-v { font-size: 32px; }
     .fresh { font-size: 12px; gap: 6px; }
     .fresh .btn .lbl, .share-btn .lbl { display: none; }
     .share-btn { width: var(--hit); padding: 0; justify-content: center; }
@@ -521,8 +523,8 @@
   // 第一個顏色是各分類的代表色：總績效藍、波段青、當沖橘、隔日沖紫、其他黃，
   // 這組在深淺兩種底色都跑過色盲和對比檢查（相鄰色差 ≥ 15、對底色 ≥ 3:1）；同分類裡再用深淺和虛線分開
   const HUES = {
-    light: { '波段做多': ['#0e8fa3', '#005f72', '#249aae', '#007487'], '當沖做空': ['#e8590c', '#c83a00', '#f56521'], '隔日沖': ['#7c5cd6', '#5630a7', '#8667e2'], '其他': ['#8a7400', '#634e00'] },
-    dark: { '波段做多': ['#14a3a8', '#007b80', '#2db0b5', '#008d92'], '當沖做空': ['#d95926', '#c14201', '#e76635'], '隔日沖': ['#9085e9', '#6b5dbd', '#9c91f7'], '其他': ['#c98500', '#9f5e00'] },
+    light: { '波段做多': ['#0e8fa3', '#005f72', '#249aae', '#007487'], '當沖做空': ['#e8590c', '#c83a00', '#f56521'], '隔日沖': ['#7c5cd6', '#5630a7', '#8667e2'], '其他': ['#3355cc', '#22409e'] },
+    dark: { '波段做多': ['#14a3a8', '#007b80', '#2db0b5', '#008d92'], '當沖做空': ['#d95926', '#c14201', '#e76635'], '隔日沖': ['#9085e9', '#6b5dbd', '#9c91f7'], '其他': ['#7b93f5', '#5a74d6'] },
   };
   const DASH = ['', '6 4', '2 3', '10 3 2 3'];
   const themeNow = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -1554,8 +1556,8 @@
 
   // ---- 分享圖卡（參考 TradeTrack-Pro）：1080×1350 的圖，只有 %，存圖或手機直接分享 ----
   // 不管畫面是深色淺色，圖卡一律深色底（傳到 LINE 比較醒目）
-  const CARD = { bg: '#0b1222', bg2: '#111a2e', text: '#f8fafc', muted: '#94a3b8', faint: '#64748b', grid: '#1e293b', up: '#f87171', down: '#4ade80', accent: '#3b82f6', peak: '#deb06c' };
-  const NUMF = '"Fira Code", ui-monospace, monospace', TXTF = '"Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
+  const CARD = { bg: '#0c1320', bg2: '#121b2c', text: '#f4f1ea', muted: '#a9b2c2', faint: '#8b95a8', grid: '#1f2a3b', up: '#f87171', down: '#4ade80', accent: '#d9a84e', peak: '#fff3d6', glow: '217,168,78' };
+  const NUMF = '"Fira Code", ui-monospace, monospace', TXTF = '"Fira Sans", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif', SERIF = '"Noto Serif TC", "Songti TC", "PMingLiU", serif';
   const cardData = () => {
     if (cur) {
       const s = M.strat.find((x) => x.name === cur); if (!s) return null;
@@ -1577,15 +1579,15 @@
     const site = (location.host + location.pathname).replace(/\/(index\.html)?$/, '');
     const asof = o.dates.length ? o.dates[o.dates.length - 1].replace(/-/g, '/') : '';
     const texts = ['QTW 策略', o.title, o.sub, '累積報酬', hl, '勝率最大回撤獲利因子趟數勝負', '累積報酬＝每趟報酬直接相加，不是帳戶報酬率', '截至收盤', range].join('');
-    try { await Promise.all([document.fonts.load(`700 150px ${NUMF}`, F.pct(end) + '0123456789.%+−/–'), document.fonts.load(`600 44px ${TXTF}`, texts), document.fonts.load(`400 30px ${TXTF}`, texts)]); } catch (e) { /* 字型讀不到就用系統字 */ }
+    try { await Promise.all([document.fonts.load(`700 150px ${NUMF}`, F.pct(end) + '0123456789.%+−/–'), document.fonts.load(`600 44px ${TXTF}`, texts), document.fonts.load(`400 30px ${TXTF}`, texts), document.fonts.load(`700 50px ${SERIF}`, 'QTW 策略' + o.title)]); } catch (e) { /* 字型讀不到就用系統字 */ }
     const bg = c.createLinearGradient(0, 0, 0, Hc); bg.addColorStop(0, CARD.bg2); bg.addColorStop(1, CARD.bg);
     c.fillStyle = bg; c.fillRect(0, 0, Wc, Hc);
     const txt = (t, xx, yy, size, color, weight = 400, font = TXTF, align = 'left') => { c.font = `${weight} ${size}px ${font}`; c.fillStyle = color; c.textAlign = align; c.textBaseline = 'alphabetic'; c.fillText(t, xx, yy); return c.measureText(t).width; };
     // 標頭：小 K 棒標誌＋名稱，右邊日期區間
     [[0, 30, 44, CARD.accent], [26, 40, 34, CARD.text], [52, 22, 42, CARD.accent]].forEach(([dx, yy, h, col]) => { c.fillStyle = col; c.fillRect(P + dx + 4, 70 + yy - h / 2 - 8, 4, h + 16); c.fillRect(P + dx, 70 + yy - h / 2, 12, h); });
-    txt('QTW 策略', P + 84, 118, 40, CARD.text, 700);
+    txt('QTW 策略', P + 84, 118, 40, CARD.text, 700, SERIF);
     txt(range, Wc - P, 118, 32, CARD.muted, 400, NUMF, 'right');
-    txt(o.title, P, 222, 50, CARD.text, 700);
+    txt(o.title, P, 222, 50, CARD.text, 700, SERIF);
     if (o.sub) txt(o.sub, P, 270, 28, CARD.muted);
     txt('累積報酬', P, 350, 30, CARD.muted);
     txt(F.pct(end), P - 6, 500, 156, tone(end), 700, NUMF);
@@ -1611,9 +1613,9 @@
       c.strokeStyle = CARD.grid; c.lineWidth = 2;
       ys.ticks(4).forEach((t) => { c.beginPath(); c.moveTo(cx0, ys(t)); c.lineTo(cx1, ys(t)); c.stroke(); txt(t === 0 ? '0%' : (t < 0 ? MINUS : '') + Math.round(Math.abs(t) * 100) + '%', cx0 - 14, ys(t) + 8, 22, CARD.faint, 400, NUMF, 'right'); });
       const path = (ctx) => { ctx.moveTo(xs(ts[0]), ys(vs[0])); for (let i = 1; i < ts.length; i++) { ctx.lineTo(xs(ts[i]), ys(vs[i - 1])); ctx.lineTo(xs(ts[i]), ys(vs[i])); } ctx.lineTo(xs(tEnd), ys(vs[vs.length - 1])); };
-      const ga = c.createLinearGradient(0, cy0, 0, cy1); ga.addColorStop(0, 'rgba(59,130,246,.30)'); ga.addColorStop(1, 'rgba(59,130,246,.02)');
+      const ga = c.createLinearGradient(0, cy0, 0, cy1); ga.addColorStop(0, `rgba(${CARD.glow},.30)`); ga.addColorStop(1, `rgba(${CARD.glow},.02)`);
       c.beginPath(); path(c); c.lineTo(xs(tEnd), ys(0)); c.lineTo(xs(ts[0]), ys(0)); c.closePath(); c.fillStyle = ga; c.fill();
-      c.save(); c.shadowColor = 'rgba(59,130,246,.7)'; c.shadowBlur = 18; c.beginPath(); path(c); c.strokeStyle = CARD.accent; c.lineWidth = 6; c.lineJoin = 'round'; c.stroke(); c.restore();
+      c.save(); c.shadowColor = `rgba(${CARD.glow},.7)`; c.shadowBlur = 18; c.beginPath(); path(c); c.strokeStyle = CARD.accent; c.lineWidth = 6; c.lineJoin = 'round'; c.stroke(); c.restore();
       hs.forEach((i) => { c.beginPath(); c.arc(xs(ts[i + 1]), ys(vs[i + 1]), 11, 0, Math.PI * 2); c.fillStyle = CARD.peak; c.fill(); c.lineWidth = 5; c.strokeStyle = CARD.bg; c.stroke(); });
       txt(F.day(o.dates[0]), cx0, cy1 + 44, 24, CARD.faint, 400, NUMF);
       txt(F.day(o.dates[o.dates.length - 1]), cx1, cy1 + 44, 24, CARD.faint, 400, NUMF, 'right');
