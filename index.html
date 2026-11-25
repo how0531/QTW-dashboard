@@ -658,7 +658,7 @@
     const theme = themeNow();
     CATS.concat([...new Set(strat.map((s) => s.cat))].filter((c) => !CATS.includes(c))).forEach((c) => {
       const pal = HUES[theme][c] || HUES[theme]['其他'];
-      strat.filter((s) => s.cat === c).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i + Math.floor(i / pal.length)) % DASH.length]; });
+      strat.filter((s) => s.cat === c).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'zh-Hant')).forEach((s, i) => { s.color = pal[i % pal.length]; s.dash = DASH[(i % pal.length + Math.floor(i / pal.length)) % DASH.length]; });  // 同一個顏色每輪換線型：3 色分類的第 1、4 支才不會一模一樣
     });
     // 總數字：和電腦資料核對＝全部每趟報酬加總 vs 最近一次同步時 daily_pnl 的 ALL cum_pct
     const n = trips.length, ret = d3.sum(trips, (t) => t.return_pct || 0);
