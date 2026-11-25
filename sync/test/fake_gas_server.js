@@ -23,6 +23,7 @@ function makeSheet(name, header) {
     name, grid, fmt,
     getLastRow: () => { for (let r = grid.length; r > 0; r--) if (grid[r - 1].some((v) => v !== '' && v != null)) return r; return 0; },
     getMaxRows: () => maxRows,
+    getMaxColumns: () => 26,
     getLastColumn: () => Math.max(0, ...grid.map((r) => { for (let c = r.length; c > 0; c--) if (r[c - 1] !== '' && r[c - 1] != null) return c; return 0; })),
     insertRowsAfter: (after, n) => { if (after > maxRows) throw new Error('insertRowsAfter 超出範圍'); maxRows += n; },
     appendRow: (row) => { const r = sh.getLastRow() + 1; if (r > maxRows) maxRows = r; grid[r - 1] = row.slice(); },
@@ -40,6 +41,7 @@ function makeSheet(name, header) {
           else if (typeof v === 'string' && /^\d+(\.\d+)?$/.test(v) && f !== '@') v = Number(v); // Sheets 會把數字字串轉成數字
           grid[r - 1 + i][c - 1 + j] = v; }); });
       },
+      setValue: (v) => { grid[r - 1] = grid[r - 1] || []; grid[r - 1][c - 1] = v; },
       clearContent: () => { for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) if (grid[r - 1 + i]) grid[r - 1 + i][c - 1 + j] = ''; },
       setNumberFormat: (f) => { for (let j = 0; j < nc; j++) fmt[c + j] = f; },
       };

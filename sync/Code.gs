@@ -9,10 +9,15 @@
  *
  * 網頁（GitHub Pages）用 GET 向這裡拿資料：只回傳 WEB_TABS 這 4 個分頁，試算表本身不用公開。
  *
+ * 每個交易日 15:00 左右 checkSync() 會檢查今天有沒有同步，沒有就寄提醒信（setupReminder() 裝一次排程）。
+ *
  * 安裝：見 sync/README.md。第一次要先執行 setup() 產生密碼（SYNC_TOKEN）。
  */
 
-var VERSION = '2026-11-05';
+var VERSION = '2026-11-26';
+
+// 沒同步的提醒信寄給誰。空白＝寄給這個 Apps Script 的擁有者（就是部署它的 Google 帳號）
+var REMIND_TO = '';
 
 var TABS = { trips: '_trips', positions: '_positions', daily: '_daily', log: '_sync_log' };
 // 用公式整欄展開的呈現頁：列數不夠時陣列公式會出錯，所以跟著原始資料一起加列。值是標題佔掉的列數
@@ -27,7 +32,7 @@ var COLS = {
     'entry_price', 'exit_time', 'exit_price', 'hold_minutes', 'trade_type', 'entry_amount', 'gross_pnl', 'fee', 'tax',
     'net_pnl', 'return_pct', 'synced_at'],
   positions: ['date', 'strategy', 'code', 'name', 'side', 'shares', 'avg_cost', 'entry_date', 'close_price',
-    'unrealized_pnl', 'unrealized_pct', 'synced_at'],
+    'unrealized_pnl', 'unrealized_pct', 'synced_at', 'flag'],
   daily: ['date', 'strategy', 'trips', 'wins', 'entry_amount', 'realized_pnl', 'realized_pct', 'unrealized_pnl',
     'open_positions', 'cum_realized_pnl', 'day_pct', 'cum_pct', 'gross_wins', 'gross_losses'],
 };
@@ -35,7 +40,7 @@ var COLS = {
 // 這些欄位一律存成文字（例如 00878 這種代號才不會掉 0）
 var TEXT = {
   trips: ['trip_id', 'strategy', 'strategy_log', 'code', 'name', 'side', 'trade_type', 'synced_at'],
-  positions: ['strategy', 'code', 'name', 'side', 'synced_at'],
+  positions: ['strategy', 'code', 'name', 'side', 'synced_at', 'flag'],
   daily: ['strategy'],
 };
 var DATE = { trips: ['exit_date', 'entry_date'], positions: ['date', 'entry_date'], daily: ['date'] };
@@ -213,9 +218,18 @@ function writePositions_(ss, rows, mode, asOf) {
   return { written: rows.length, dates: Object.keys(dates).sort(), total: all.length, cleared: cleared, as_of: asOf || '' };
 }
 
+// 後來才加在最後面的欄：試算表還沒有這欄標題就自己補上（舊資料這欄是空的）
+var ADDED = { positions: ['flag'] };
+
 function sheet_(ss, kind) {
   var sh = ss.getSheetByName(TABS[kind]);
   if (!sh) throw new Error('找不到分頁 ' + TABS[kind]);
+  var add = ADDED[kind] || [], base = COLS[kind].length - add.length;
+  if (sh.getMaxColumns && sh.getMaxColumns() < COLS[kind].length) sh.insertColumnsAfter(sh.getMaxColumns(), COLS[kind].length - sh.getMaxColumns());
+  var cur = sh.getRange(1, 1, 1, COLS[kind].length).getValues()[0].map(function (v) { return String(v).trim(); });
+  if (cur.slice(0, base).join(',') === COLS[kind].slice(0, base).join(',')) {
+    add.forEach(function (c, i) { if (cur[base + i] === '') sh.getRange(1, base + i + 1).setValue(c); });
+  }
   var head = sh.getRange(1, 1, 1, COLS[kind].length).getValues()[0].map(function (v) { return String(v).trim(); });
   if (head.join(',') !== COLS[kind].join(',')) throw new Error(TABS[kind] + ' 第一列欄名和程式不一樣，先不寫入：' + head.join(','));
   return sh;
@@ -278,4 +292,101 @@ function writeTable_(sh, kind, rows) {
 
 function json_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ───────────── 沒同步就寄提醒 ─────────────
+// 電腦每個交易日 14:00 跑報表後推送。15:00 左右檢查：今天是交易日、_sync_log 卻沒有今天的推送（或推了但資料日期不是今天）→ 寄信。
+// 交易日：週一到週五，扣掉證交所公告的休市日（openapi.twse.com.tw，和報表程式同一個來源）。抓不到休市日時平日一律當交易日。
+// 同一天只寄一次。
+
+/** 裝排程：在編輯器裡執行一次。每天 15 點那一小時跑 checkSync（Google 的排程誤差約 15 分鐘） */
+function setupReminder() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'checkSync') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('checkSync').timeBased().atHour(15).nearMinute(0).everyDays(1).inTimezone('Asia/Taipei').create();
+  Logger.log('已設定：每天 15:00 左右檢查同步，沒同步會寄到 ' + remindTo_());
+}
+
+/** 排程呼叫。手動執行也可以（會照今天的狀況判斷，今天已經寄過就不再寄） */
+function checkSync() {
+  var now = new Date();
+  var today = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy-MM-dd');
+  var r = syncStatus_(SpreadsheetApp.getActiveSpreadsheet(), today);
+  if (r.ok) { Logger.log(today + ' 已同步：' + r.detail); return r; }
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('REMIND_SENT') === today) { Logger.log(today + ' 今天已經寄過提醒'); return r; }
+  var md = Number(today.slice(5, 7)) + '/' + Number(today.slice(8, 10));
+  var subject = '【QTW同步提醒 ' + md + '】' + r.title;
+  var body = [
+    r.title + '。',
+    '',
+    r.detail,
+    '',
+    '可能的原因：電腦睡眠或關機、14:00 排程沒跑、報表程式出錯、網路斷線。',
+    '可以先看：',
+    '1. 電腦是不是醒著、XQ 有沒有開。',
+    '2. C:\\XS\\report\\sheet_sync.log 最後幾行的錯誤訊息。',
+    '3. 手動補跑：雙擊 C:\\XS\\tools\\每日報表.bat（會重跑報表並同步）；只想補同步就在 C:\\XS\\tools 執行 python sheet_sync.py。',
+    '',
+    '網站會顯示最後一次推送的資料，補跑後 5 分鐘內自動更新。',
+    '（這封信由「策略管理」試算表的 Apps Script 自動寄出，每個交易日最多一封。）'
+  ].join('\n');
+  MailApp.sendEmail(remindTo_(), subject, body);
+  props.setProperty('REMIND_SENT', today);
+  Logger.log('已寄提醒：' + subject);
+  r.sent = true;
+  return r;
+}
+
+function remindTo_() {
+  return REMIND_TO || Session.getEffectiveUser().getEmail();
+}
+
+// 今天該不該有同步、有沒有同步。回傳 { ok, title, detail }
+function syncStatus_(ss, today) {
+  var td = tradingDay_(today);
+  if (!td.trading) return { ok: true, detail: '今天不是交易日（' + td.why + '），不用檢查' };
+  var log = ss.getSheetByName(TABS.log);
+  var rows = [];
+  if (log && log.getLastRow() > 1) rows = log.getRange(2, 1, log.getLastRow() - 1, 2).getDisplayValues();
+  var dayOf = function (s) { var m = /^(\d{4})\D(\d{1,2})\D(\d{1,2})/.exec(String(s || '').trim()); return m ? m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2) : ''; };
+  var last = null, todays = [];
+  rows.forEach(function (r) { var d = dayOf(r[0]); if (!d) return; if (!last || d >= dayOf(last[0])) last = r; if (d === today) todays.push(r); });
+  var lastText = last ? '最後一次推送是 ' + String(last[0]).trim() + '（資料日期 ' + (dayOf(last[1]) || '空白') + '）。' : '_sync_log 沒有任何推送紀錄。';
+  if (!todays.length) return { ok: false, title: '今天還沒有同步到試算表', detail: lastText };
+  var fresh = todays.filter(function (r) { return dayOf(r[1]) === today; });
+  if (!fresh.length) return { ok: false, title: '今天有推送，但資料停在 ' + dayOf(todays[todays.length - 1][1]), detail: '今天 ' + todays.length + ' 次推送的資料日期都不是今天，報表可能沒產生今天的檔案。' + lastText };
+  return { ok: true, detail: '今天推送 ' + todays.length + ' 次，最後一次 ' + String(todays[todays.length - 1][0]).trim() };
+}
+
+// 證交所休市日，快取在 Script Properties（每年一份，30 天更新一次）
+function tradingDay_(iso) {
+  var wd = new Date(iso + 'T12:00:00Z').getUTCDay();
+  if (wd === 0 || wd === 6) return { trading: false, why: '週末' };
+  var hol = holidays_(iso.slice(0, 4));
+  if (hol && hol[iso]) return { trading: false, why: hol[iso] };
+  return { trading: true };
+}
+
+function holidays_(year) {
+  var props = PropertiesService.getScriptProperties(), key = 'TWSE_HOLIDAYS_' + year;
+  var cached = null;
+  try { cached = JSON.parse(props.getProperty(key) || 'null'); } catch (e) { cached = null; }
+  if (cached && Date.now() - cached.at < 30 * 864e5) return cached.days;
+  try {
+    var res = UrlFetchApp.fetch('https://openapi.twse.com.tw/v1/holidaySchedule/holidaySchedule', { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode());
+    var days = {};
+    JSON.parse(res.getContentText()).forEach(function (r) {
+      var m = /^(\d{2,3})(\d{2})(\d{2})$/.exec(String(r.Date || '').trim());
+      if (!m) return;
+      var text = String(r.Name || '') + ' ' + String(r.Description || '');
+      if (/開始交易|最後交易/.test(text)) return;   // 清單裡也有開盤日，例如「春節前最後交易日」
+      days[(Number(m[1]) + 1911) + '-' + m[2] + '-' + m[3]] = String(r.Name || '休市').trim();
+    });
+    props.setProperty(key, JSON.stringify({ at: Date.now(), days: days }));
+    return days;
+  } catch (e) {
+    Logger.log('抓不到證交所休市日（' + e.message + '），' + (cached ? '用舊的快取' : '平日一律當交易日'));
+    return cached ? cached.days : null;
+  }
 }

@@ -11,3 +11,4 @@ SRV=$!
 trap 'kill $SRV 2>/dev/null; rm -rf "$WORK"' EXIT
 for i in $(seq 1 50); do grep -q ready "$WORK/server.log" 2>/dev/null && break; sleep 0.1; done
 python3 -I "$HERE/check.py" "$HERE/.." "$WORK" "http://127.0.0.1:$PORT" "$TOKEN"
+node "$HERE/reminder_test.js"

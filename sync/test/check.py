@@ -152,6 +152,19 @@ check("全部出場（沒有持倉檔、daily 說 0 檔）後，持倉清空", c
 write(data / "positions/2026/positions_20261109.csv", POS_H, [["2026-11-09", S2, "2330", "台積電", "long", 1000, 1000, "2026-11-09", 1010, 10000, 0.01]])
 code, out = run()
 check("新的持倉寫進去", code == 0 and [r[0] for r in dump()["_positions"]] == ["2026-11-09"], dump()["_positions"])
+# 10b. 持倉檔多一欄 flag（報表程式標「疑似未成交」）：存進 _positions 最後一欄，標題自己補上，網頁也拿得到
+write(data / "positions/2026/positions_20261109.csv", POS_H + ["flag"], [["2026-11-09", S2, "2330", "台積電", "long", 1000, 1000, "2026-11-09", 1010, 10000, 0.01, "疑似未成交"],
+      ["2026-11-09", S2, "2317", "鴻海", "long", 1000, 200, "2026-11-09", 201, 1000, 0.005, ""]])
+code, out = run()
+with urllib.request.urlopen(BASE + "/dump") as r:
+    head = json.loads(r.read().decode("utf-8"))["_positions"][0]
+pos = dump()["_positions"]
+web = json.loads(urllib.request.urlopen(BASE + "/exec").read().decode("utf-8"))
+check("持倉 flag 欄寫進試算表、標題自動補上", code == 0 and head[-1] == "flag" and sorted(r[12] for r in pos) == ["", "疑似未成交"], [head, pos, out])
+check("網頁拿得到 flag 欄", web["positions"][0][-1] == "flag" and any(r[-1] == "疑似未成交" for r in web["positions"][1:]), web["positions"])
+write(data / "positions/2026/positions_20261109.csv", POS_H, [["2026-11-09", S2, "2330", "台積電", "long", 1000, 1000, "2026-11-09", 1010, 10000, 0.01]])
+code, out = run()
+check("舊格式（沒有 flag 欄）的持倉檔照樣同步，flag 清成空白", code == 0 and [r[12] for r in dump()["_positions"]] == [""], [dump()["_positions"], out])
 write(data / "positions/2026/positions_20261110.csv", POS_H, [])
 code, out = run()
 check("持倉檔只有標題列時，持倉清空", code == 0 and dump()["_positions"] == [], out)
