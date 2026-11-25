@@ -342,7 +342,7 @@
     <button class="back" id="back" type="button" hidden><svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>策略績效</button>
     <div class="mark" id="mark">
       <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="3" y="7" width="4" height="9" rx="1" fill="var(--accent)"/><rect x="4.4" y="3" width="1.2" height="16" fill="var(--accent)"/><rect x="9" y="9" width="4" height="7" rx="1" fill="var(--text)"/><rect x="10.4" y="6" width="1.2" height="13" fill="var(--text)"/><rect x="15" y="5" width="4" height="8" rx="1" fill="var(--accent)"/><rect x="16.4" y="2" width="1.2" height="14" fill="var(--accent)"/></svg>
-      <b>QTW 策略</b><span id="scope">XQ 實盤</span>
+      <b>QTW 策略</b><span id="scope"></span>
     </div>
     <div class="fresh">
       <span id="loaded">讀取中…</span>
@@ -710,7 +710,7 @@
   const renderFinding = () => {
     const p = $('finding'); p.replaceChildren();
     const add = (t, cls) => p.appendChild(cls ? el('span', cls, t) : document.createTextNode(t));
-    if (!M.dates.length && !M.positions.length) { add('還沒有實盤交易紀錄。'); return; }
+    if (!M.dates.length && !M.positions.length) { add('還沒有交易紀錄。'); return; }
     if (M.dates.length) {
       const d = M.dates[M.dates.length - 1];
       const ts = M.trips.filter((t) => t.d === d);
@@ -1566,7 +1566,7 @@
       return { title: s.short, sub: s.cat, dates: dts, v: dts.map((d) => (c += byD.get(d))), n: s.n, w: s.w, l: s.l, pf: s.pf, file: 'strategy' };
     }
     const k = M.kpi, W = d3.sum(M.strat, (s) => s.w), L = d3.sum(M.strat, (s) => s.l);
-    return { title: '總績效', sub: `XQ 實盤・${M.strat.filter((s) => s.n).length} 支策略有交易`, dates: M.dates, v: M.total, n: k.n, w: W, l: L, pf: k.pf, file: 'total' };
+    return { title: '總績效', sub: `${M.strat.filter((s) => s.n).length} 支策略有交易`, dates: M.dates, v: M.total, n: k.n, w: W, l: L, pf: k.pf, file: 'total' };
   };
   const drawCard = async (o) => {
     const Wc = 1080, Hc = 1350, P = 80, cv = document.createElement('canvas'); cv.width = Wc; cv.height = Hc;
@@ -1671,7 +1671,7 @@
   const openStrategy = (name) => { homeY = window.scrollY; pushed = true; location.hash = 's=' + encodeURIComponent(name); };
   const goBack = () => { if (pushed) { pushed = false; history.back(); } else { history.replaceState(null, '', location.pathname + location.search); route(); } };
 
-  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderCalendar(); renderBubbles(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `XQ 實盤・${M.strat.length} 支策略`; if (cur) renderDetail(); };
+  const renderAll = () => { if (!D) return; build(); renderFinding(); renderLead(); renderKpis(); renderToggles(); renderChart(); renderCalendar(); renderBubbles(); renderStrategies(); renderPositions(); renderTrips(); $('scope').textContent = `${M.strat.length} 支策略`; if (cur) renderDetail(); };
 
   // 手機：手指放開後提示留著，點圖以外的地方才收起來
   document.addEventListener('pointerdown', (ev) => { if (!ev.target.closest('.chart, button.cal-d')) hiders.forEach((h) => h()); }, { passive: true });
